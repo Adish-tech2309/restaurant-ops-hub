@@ -4,18 +4,39 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Restaurant Ops Hub</title>
+<script>try{var __t=localStorage.getItem("roh-theme");if(__t!=="dark"&&__t!=="light"){__t=(window.matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches)?"dark":"light";}document.documentElement.setAttribute("data-theme",__t);}catch(e){document.documentElement.setAttribute("data-theme","light");}</script>
 <style>
 /* ============ Restaurant Ops Hub — professional design system (offline, no external assets) ============ */
 :root{
-  --bg:#f2f4f6; --surface:#ffffff; --ink:#1b2431; --muted:#68727f; --faint:#98a1ad;
-  --line:#e0e5ea; --line-soft:#edf0f4;
+  color-scheme:light;
+  --bg:#f2f4f6; --surface:#ffffff; --surface-2:#f7f9fa; --input-bg:#ffffff;
+  --ink:#1b2431; --muted:#68727f; --faint:#98a1ad; --label-ink:#39434f; --pill-ink:#4a5568;
+  --line:#e0e5ea; --line-soft:#edf0f4; --track:#e8ecf0; --input-border:#ccd3db;
+  --ghost-border:#cfd6de; --ghost-border-hover:#a9b4c0; --red-line:#eec2bb;
+  --overdue-bg:#fdf4f3; --card-hi:#fffdf7;
+  --accent:#166b4d; --accent-hover:#0e5039; --accent-ink:#166b4d; --accent-deep:#0e5039; --accent-soft:#e1efe7;
+  --red:#b3372c; --red-hover:#8c2a21; --red-ink:#b3372c; --red-deep:#8c2a21; --red-soft:#f9e9e6;
+  --amber:#8a5f0e; --amber-ink:#8a5f0e; --amber-text:#6b5110; --amber-soft:#faf3dd; --amber-line:#e9d48f;
+  --blue:#2f5d86; --blue-hover:#234a6d; --blue-ink:#2f5d86; --blue-deep:#234a6d; --blue-soft:#e8f0f8;
+  --tip-bg:#1c2536; --tip-ink:#ffffff;
   --side:#141b29; --side-ink:#b9c2d2; --side-dim:#7e8899;
-  --accent:#166b4d; --accent-dark:#0e5039; --accent-soft:#e1efe7;
-  --red:#b3372c; --red-dark:#8c2a21; --red-soft:#f9e9e6;
-  --amber:#8a5f0e; --amber-soft:#faf3dd; --amber-line:#e9d48f;
-  --blue:#2f5d86; --blue-dark:#234a6d; --blue-soft:#e8f0f8;
   --radius:10px; --shadow:0 1px 2px rgba(16,24,40,.06);
   --sidebar-w:250px;
+}
+[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0e1320; --surface:#17202f; --surface-2:#1d2740; --input-bg:#121a2a;
+  --ink:#e9edf3; --muted:#9aa5b5; --faint:#7d8899; --label-ink:#c9d1dd; --pill-ink:#b9c2d2;
+  --line:#27334b; --line-soft:#1f2a40; --track:#27334b; --input-border:#35435f;
+  --ghost-border:#35435f; --ghost-border-hover:#4c5d7e; --red-line:#5a322c;
+  --overdue-bg:#2e201d; --card-hi:#1a2438;
+  --accent:#166b4d; --accent-hover:#1e8a5f; --accent-ink:#5cb98c; --accent-deep:#8fd6b2; --accent-soft:#14362b;
+  --red:#b3372c; --red-hover:#c14a3c; --red-ink:#e58a7d; --red-deep:#f0a89e; --red-soft:#38211e;
+  --amber:#c9a227; --amber-ink:#d9b64a; --amber-text:#dcc078; --amber-soft:#2c2515; --amber-line:#5c4d1f;
+  --blue:#2f5d86; --blue-hover:#3a6f9e; --blue-ink:#7fb0d8; --blue-deep:#a9cbe8; --blue-soft:#1b2a40;
+  --tip-bg:#e9edf3; --tip-ink:#141b29;
+  --side:#141b29; --side-ink:#b9c2d2; --side-dim:#7e8899;
+  --shadow:0 1px 2px rgba(0,0,0,.45);
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{font-size:16px}
@@ -38,14 +59,16 @@ body{margin:0;background:var(--bg);color:var(--ink);
 .app-head .sub{font-size:.74rem;color:var(--side-ink);margin-left:auto;white-space:nowrap}
 /* ---- tabs ---- */
 .tab{display:none}
-.tab.active{display:block;animation:fade .15s ease-in}
-@keyframes fade{from{opacity:.4}to{opacity:1}}
+.tab.active{display:block;animation:tabIn .2s ease-out}
+@keyframes tabIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@keyframes cardIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.tab.active .card{animation:cardIn .24s cubic-bezier(.22,.68,.32,1) both}
 .tab h2{font-size:1.38rem;font-weight:700;letter-spacing:-.02em;margin:20px 0 14px;padding-bottom:10px;border-bottom:1px solid var(--line)}
 /* ---- cards ---- */
 .card{background:var(--surface);border:1px solid var(--line);border-radius:12px;
   padding:16px;margin:0 0 14px;box-shadow:var(--shadow)}
 .card h3{margin:0 0 10px;font-size:1rem;font-weight:650;letter-spacing:-.01em}
-.card h3 .svgic{color:var(--accent);margin-right:7px;font-size:1.05em}
+.card h3 .svgic{color:var(--accent-ink);margin-right:7px;font-size:1.05em}
 .card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
 .card-head h3{margin:0}
 .kv{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid var(--line-soft);font-size:.93rem}
@@ -57,18 +80,18 @@ body{margin:0;background:var(--bg);color:var(--ink);
 .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .stat{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:13px 14px;box-shadow:var(--shadow)}
 .stat .lbl{display:flex;align-items:center;gap:7px;font-size:.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
-.stat .lbl .svgic{color:var(--accent);font-size:.95rem}
+.stat .lbl .svgic{color:var(--accent-ink);font-size:.95rem}
 .stat .num{font-size:1.5rem;font-weight:750;margin-top:4px;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
 .stat .det{font-size:.78rem;color:var(--muted);margin-top:3px;line-height:1.4}
 /* ---- pills & tags ---- */
-.pill{display:inline-flex;align-items:center;background:#edf0f4;color:#4a5568;
+.pill{display:inline-flex;align-items:center;background:var(--surface-2);color:var(--pill-ink);
   border-radius:999px;padding:2px 10px;font-size:.7rem;font-weight:650;letter-spacing:.02em;white-space:nowrap}
-.pill-accent{background:var(--accent-soft);color:var(--accent-dark)}
+.pill-accent{background:var(--accent-soft);color:var(--accent-deep)}
 .tag{display:inline-flex;align-items:center;font-size:.68rem;font-weight:700;border-radius:6px;padding:3px 9px;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap}
-.tag-paid{background:var(--accent-soft);color:var(--accent-dark)}
-.tag-unpaid{background:#edf0f4;color:#4a5568}
+.tag-paid{background:var(--accent-soft);color:var(--accent-deep)}
+.tag-unpaid{background:var(--surface-2);color:var(--pill-ink)}
 .tag-overdue{background:var(--red);color:#fff}
-.tag-info{background:var(--blue-soft);color:var(--blue-dark)}
+.tag-info{background:var(--blue-soft);color:var(--blue-deep)}
 /* ---- buttons ---- */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid transparent;border-radius:9px;
   padding:12px 18px;font-size:.94rem;font-weight:650;cursor:pointer;min-height:48px;text-align:center;text-decoration:none;
@@ -76,35 +99,37 @@ body{margin:0;background:var(--bg);color:var(--ink);
 .btn:active{transform:translateY(1px)}
 .btn .svgic{font-size:1.02rem}
 .btn-primary{background:var(--accent);color:#fff;width:100%}
-.btn-primary:hover{background:var(--accent-dark)}
+.btn-primary:hover{background:var(--accent-hover)}
 .btn-green{background:var(--accent);color:#fff}
-.btn-green:hover{background:var(--accent-dark)}
+.btn-green:hover{background:var(--accent-hover)}
 .btn-blue{background:var(--blue);color:#fff}
-.btn-blue:hover{background:var(--blue-dark)}
-.btn-ghost{background:var(--surface);border-color:#cfd6de;color:var(--ink)}
-.btn-ghost:hover{border-color:#a9b4c0;background:#f7f9fa}
-.btn-danger{background:var(--red-soft);color:var(--red-dark);border-color:#eec2bb}
+.btn-blue:hover{background:var(--blue-hover)}
+.btn-ghost{background:var(--surface);border-color:var(--ghost-border);color:var(--ink)}
+.btn-ghost:hover{border-color:var(--ghost-border-hover);background:var(--surface-2)}
+.btn-danger{background:var(--red-soft);color:var(--red-deep);border-color:var(--red-line)}
 .btn-danger:hover{background:#f6ddd8}
 .btn-danger-solid{background:var(--red);color:#fff;width:100%}
-.btn-danger-solid:hover{background:var(--red-dark)}
+.btn-danger-solid:hover{background:var(--red-hover)}
 .btn-row{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
 .btn-row .btn{flex:1;min-width:120px}
-.icon-btn{display:inline-flex;align-items:center;justify-content:center;border:1px solid #cfd6de;background:var(--surface);
-  border-radius:8px;min-width:44px;min-height:44px;cursor:pointer;color:#455062;font-size:1rem}
-.icon-btn:hover{border-color:#a9b4c0;background:#f4f6f8}
-.icon-btn.danger{color:var(--red)}
-.icon-btn.danger:hover{background:var(--red-soft);border-color:#dfa197}
+.icon-btn{display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--ghost-border);background:var(--surface);
+  border-radius:8px;min-width:44px;min-height:44px;cursor:pointer;color:var(--label-ink);font-size:1rem}
+.icon-btn:hover{border-color:var(--ghost-border-hover);background:var(--surface-2)}
+.icon-btn.danger{color:var(--red-ink)}
+.icon-btn.danger:hover{background:var(--red-soft);border-color:var(--red-line)}
 /* ---- forms ---- */
 .field{margin:0 0 12px}
-.field label{display:block;font-weight:600;font-size:.84rem;margin-bottom:6px;color:#39434f}
-.field input,.field select,.field textarea{width:100%;padding:11px 12px;border:1px solid #ccd3db;
-  border-radius:8px;font-size:1rem;background:#fff;color:var(--ink);min-height:48px;font-family:inherit}
+.field label{display:block;font-weight:600;font-size:.84rem;margin-bottom:6px;color:var(--label-ink)}
+.field input,.field select,.field textarea{width:100%;padding:11px 12px;border:1px solid var(--input-border);
+  border-radius:8px;font-size:1rem;background:var(--input-bg);color:var(--ink);min-height:48px;font-family:inherit}
 .field textarea{min-height:84px;resize:vertical}
-.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(22,107,77,.14)}
-.field .err{color:var(--red);font-size:.8rem;margin-top:4px;display:none}
-.field.invalid input,.field.invalid select{border-color:var(--red)}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--accent-ink);box-shadow:0 0 0 3px rgba(22,107,77,.14)}
+.field .err{color:var(--red-ink);font-size:.8rem;margin-top:4px;display:none}
+.field.invalid input,.field.invalid select{border-color:var(--red-ink)}
 .field.invalid input:focus,.field.invalid select:focus{box-shadow:0 0 0 3px rgba(179,55,44,.14)}
-.field.invalid .err{display:block}
+.field.invalid .err{display:flex;align-items:center;gap:7px;font-weight:600}
+.field.invalid .err::before{content:"!";display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;flex-shrink:0;
+  border-radius:50%;background:var(--red);color:#fff;font-size:11px;font-weight:800}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .hint{font-size:.8rem;color:var(--muted)}
 .notes-line{display:flex;gap:8px;align-items:flex-start}
@@ -118,14 +143,16 @@ body{margin:0;background:var(--bg);color:var(--ink);
 .tbl-wrap{overflow-x:auto;margin:0 -16px;padding:0 16px}
 .tbl{width:100%;border-collapse:collapse;font-size:.9rem;min-width:540px}
 .tbl thead th{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);
-  text-align:left;padding:9px 12px;border-bottom:2px solid var(--line);white-space:nowrap;background:var(--surface)}
+  text-align:left;padding:9px 12px;border-bottom:2px solid var(--line);white-space:nowrap;background:var(--surface);
+  position:sticky;top:0;z-index:2}
 .tbl tbody td{padding:11px 12px;border-bottom:1px solid var(--line-soft);vertical-align:middle}
 .tbl tbody tr:last-child td{border-bottom:0}
-.tbl tbody tr:hover{background:#f7f9fa}
+.tbl tbody tr:hover{background:var(--surface-2)}
+.tbl-wrap.tall{max-height:62vh;overflow-y:auto}
 .tbl .num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 .tbl .th-act,.tbl .td-act{text-align:right;white-space:nowrap;width:1%}
 .tbl .meta{font-size:.78rem;color:var(--muted);margin-top:2px}
-.row-overdue td{background:#fdf4f3}
+.row-overdue td{background:var(--overdue-bg)}
 /* ---- checklists ---- */
 .chk{display:flex;gap:12px;align-items:flex-start;padding:11px 2px;border-bottom:1px solid var(--line-soft);cursor:pointer;font-size:.94rem}
 .chk:last-child{border-bottom:0}
@@ -135,13 +162,14 @@ body{margin:0;background:var(--bg);color:var(--ink);
 /* ---- bar charts ---- */
 .bar-row{display:flex;align-items:center;gap:10px;margin:9px 0;font-size:.88rem}
 .bar-lbl{width:104px;flex-shrink:0;color:var(--muted);font-size:.8rem}
-.bar-track{flex:1;background:#e8ecf0;border-radius:999px;height:10px;overflow:hidden}
-.bar-fill{height:100%;background:var(--accent);border-radius:999px;min-width:3px}
+.bar-track{flex:1;background:var(--track);border-radius:999px;height:10px;overflow:hidden}
+.bar-fill{height:100%;background:var(--accent-ink);border-radius:999px;min-width:3px;
+  transition:width .55s cubic-bezier(.22,.68,.32,1)}
 .bar-val{width:86px;text-align:right;font-weight:650;font-size:.84rem;font-variant-numeric:tabular-nums}
 /* ---- disclaimer ---- */
 .disclaimer{background:var(--amber-soft);border:1px solid var(--amber-line);border-radius:10px;padding:12px 14px;
-  font-size:.84rem;margin:0 0 14px;color:#6b5110;display:flex;gap:10px;align-items:flex-start;line-height:1.5}
-.disclaimer .svgic{color:var(--amber);font-size:1.05rem;margin-top:1px}
+  font-size:.84rem;margin:0 0 14px;color:var(--amber-text);display:flex;gap:10px;align-items:flex-start;line-height:1.5}
+.disclaimer .svgic{color:var(--amber-ink);font-size:1.05rem;margin-top:1px}
 /* ---- navigation ---- */
 .nav{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--line);
   display:grid;grid-template-columns:repeat(5,1fr);z-index:60;
@@ -150,7 +178,7 @@ body{margin:0;background:var(--bg);color:var(--ink);
   cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;min-height:58px;font-weight:650;font-family:inherit}
 .nav .nav-ic{display:inline-flex}
 .nav .nav-ic .svgic{font-size:22px}
-.nav button.active{color:var(--accent-dark)}
+.nav button.active{color:var(--accent-ink)}
 .side-brand{display:none}
 /* ---- empty states ---- */
 .empty{text-align:center;color:var(--muted);padding:30px 14px;font-size:.93rem}
@@ -181,15 +209,109 @@ body{margin:0;background:var(--bg);color:var(--ink);
 }
 /* ---- print ---- */
 @media print{
-  .nav,.app-head,.no-print{display:none!important}
+  :root,[data-theme="dark"]{
+    color-scheme:light;
+    --bg:#fff; --surface:#fff; --surface-2:#f7f9fa; --input-bg:#fff;
+    --ink:#1b2431; --muted:#68727f; --faint:#98a1ad; --label-ink:#39434f; --pill-ink:#4a5568;
+    --line:#e0e5ea; --line-soft:#edf0f4; --track:#e8ecf0; --input-border:#ccd3db;
+    --ghost-border:#cfd6de; --ghost-border-hover:#a9b4c0; --red-line:#eec2bb;
+    --overdue-bg:#fdf4f3; --card-hi:#fffdf7;
+    --accent:#166b4d; --accent-hover:#0e5039; --accent-ink:#166b4d; --accent-deep:#0e5039; --accent-soft:#e1efe7;
+    --red:#b3372c; --red-hover:#8c2a21; --red-ink:#b3372c; --red-deep:#8c2a21; --red-soft:#f9e9e6;
+    --amber:#8a5f0e; --amber-ink:#8a5f0e; --amber-text:#6b5110; --amber-soft:#faf3dd; --amber-line:#e9d48f;
+    --blue:#2f5d86; --blue-hover:#234a6d; --blue-ink:#2f5d86; --blue-deep:#234a6d; --blue-soft:#e8f0f8;
+    --tip-bg:#1c2536; --tip-ink:#fff;
+    --shadow:none;
+  }
+  .nav,.app-head,.no-print,.toast-wrap,.modal-overlay,.chart-tip{display:none!important}
   body{padding-bottom:0;background:#fff}
   .wrap{max-width:100%;margin-left:0}
   .card,.item{box-shadow:none;break-inside:avoid}
   .tbl-wrap{overflow:visible;margin:0;padding:0}
   .tbl{min-width:0}
   .tbl tbody tr:hover{background:none}
+  .tab.active .card{animation:none}
 }
 
+/* ---- theme toggle ---- */
+.theme-btn{margin-left:10px;display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;
+  border-radius:9px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.07);color:#fff;cursor:pointer;flex-shrink:0}
+.theme-btn:hover{background:rgba(255,255,255,.14)}
+.theme-btn .svgic{font-size:18px}
+@media(min-width:960px){
+  .theme-btn{border-color:var(--line);background:var(--surface-2);color:var(--ink)}
+  .theme-btn:hover{background:var(--line-soft)}
+}
+/* ---- toasts ---- */
+.toast-wrap{position:fixed;left:0;right:0;bottom:calc(84px + env(safe-area-inset-bottom));z-index:300;display:flex;
+  flex-direction:column;align-items:center;gap:8px;padding:0 16px;pointer-events:none}
+.toast{display:flex;align-items:center;gap:10px;background:#1c2536;color:#fff;border-radius:10px;padding:12px 16px;
+  font-size:.9rem;font-weight:600;box-shadow:0 10px 30px rgba(0,0,0,.3);opacity:0;transform:translateY(10px);
+  transition:opacity .22s ease-out,transform .22s ease-out;max-width:480px;pointer-events:auto;line-height:1.45}
+.toast.show{opacity:1;transform:none}
+.toast .svgic{font-size:1.15rem;flex-shrink:0}
+.toast-success .svgic{color:#5fce96}
+.toast-error .svgic{color:#f08a7d}
+.toast-info .svgic{color:#8fb8dd}
+/* ---- modal ---- */
+.modal-overlay{position:fixed;inset:0;background:rgba(15,20,32,.55);z-index:200;display:flex;align-items:center;
+  justify-content:center;padding:20px;animation:tabIn .18s ease-out}
+.modal-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;max-width:400px;width:100%;
+  padding:26px 24px;text-align:center;box-shadow:0 18px 50px rgba(0,0,0,.25);animation:cardIn .22s cubic-bezier(.22,.68,.32,1)}
+.modal-card h3{margin:0 0 8px;font-size:1.12rem;letter-spacing:-.01em}
+.modal-card p{color:var(--muted);font-size:.92rem;margin:0 0 20px;line-height:1.55;white-space:pre-line}
+.modal-ic{width:50px;height:50px;border-radius:50%;background:var(--accent-soft);color:var(--accent-ink);
+  display:inline-flex;align-items:center;justify-content:center;font-size:23px;margin-bottom:14px}
+.modal-ic.danger{background:var(--red-soft);color:var(--red-deep)}
+.modal-btns{display:flex;gap:10px}
+.modal-btns .btn{width:auto;flex:1;min-height:48px}
+/* ---- empty states ---- */
+.empty-state{text-align:center;padding:38px 20px;max-width:430px;margin:0 auto}
+.es-ic{width:58px;height:58px;border-radius:18px;background:var(--accent-soft);color:var(--accent-ink);
+  display:inline-flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 14px}
+.es-head{font-weight:700;font-size:1.02rem;letter-spacing:-.01em}
+.es-sub{color:var(--muted);font-size:.88rem;margin-top:6px;line-height:1.55}
+.es-btn{width:auto;margin-top:16px;padding:11px 24px;min-height:46px}
+.empty-inline2{display:flex;align-items:center;justify-content:center;gap:10px;padding:18px 10px;color:var(--muted);font-size:.88rem}
+.empty-inline2 .svgic{color:var(--faint);font-size:1.2rem}
+/* ---- sales trend chart ---- */
+.chart-wrap{position:relative}
+.sales-chart{width:100%;height:auto;display:block}
+.ct-grid{stroke:var(--line-soft);stroke-width:1}
+.ct-axlbl{fill:var(--faint);font-size:10px}
+.ct-vallbl{fill:var(--muted);font-size:10px;font-variant-numeric:tabular-nums}
+.ct-line{fill:none;stroke:var(--accent-ink);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+.ct-area{fill:var(--accent-ink);opacity:.13}
+.ct-avg{stroke:var(--faint);stroke-width:1.5;stroke-dasharray:5 4}
+.ct-avglbl{fill:var(--faint);font-size:10px}
+.ct-pt{fill:var(--accent-ink);stroke:var(--surface);stroke-width:2}
+.ct-mmlbl{fill:var(--muted);font-size:10.5px;font-weight:700}
+.ct-hit{cursor:crosshair}
+.chart-tip{position:absolute;pointer-events:none;background:var(--tip-bg);color:var(--tip-ink);border-radius:8px;
+  padding:7px 11px;font-size:.78rem;font-weight:700;white-space:nowrap;transform:translate(-50%,-135%);opacity:0;
+  transition:opacity .12s ease-out;z-index:5;font-variant-numeric:tabular-nums;box-shadow:0 6px 18px rgba(0,0,0,.22)}
+.chart-tip .tt-sub{display:block;font-weight:400;opacity:.72;font-size:.7rem}
+@media (prefers-reduced-motion: no-preference){
+  .ct-line{stroke-dasharray:1;stroke-dashoffset:1;animation:ctDraw .9s cubic-bezier(.22,.68,.32,1) .1s forwards}
+  @keyframes ctDraw{to{stroke-dashoffset:0}}
+  .ct-area{opacity:0;animation:ctFade .6s ease-out .45s forwards}
+  @keyframes ctFade{to{opacity:.13}}
+}
+/* ---- focus visibility ---- */
+button:focus-visible,a:focus-visible,.icon-btn:focus-visible,.theme-btn:focus-visible,
+input[type=checkbox]:focus-visible,input[type=radio]:focus-visible{outline:2px solid var(--accent-ink);outline-offset:2px;border-radius:6px}
+.kv a{color:var(--accent-ink);font-weight:600}
+/* ---- smooth theme + state transitions ---- */
+@media (prefers-reduced-motion: no-preference){
+  body,.card,.item,.stat,.nav,.app-head,.tbl thead th,.pill,.chk,.kv,.thumb,.modal-card{
+    transition:background-color .25s ease,border-color .25s ease,color .25s ease}
+  .btn{transition:background-color .15s ease,border-color .15s ease,color .15s ease,transform .1s ease}
+  .field input,.field select,.field textarea{transition:border-color .25s ease,background-color .25s ease,box-shadow .15s ease}
+}
+/* ---- reduced motion ---- */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+}
 </style>
 </head>
 <body>
@@ -197,6 +319,7 @@ body{margin:0;background:var(--bg);color:var(--ink);
   <div class="head-inner">
     <h1 id="headName"><span>Restaurant Ops Hub</span></h1>
     <div class="sub" id="headDate"></div>
+    <button id="themeBtn" class="theme-btn no-print" aria-label="Switch to dark mode"></button>
   </div>
 </header>
 
@@ -214,6 +337,8 @@ body{margin:0;background:var(--bg);color:var(--ink);
 </main>
 
 <nav class="nav no-print" id="bottomNav" aria-label="Main navigation"></nav>
+<div id="toastWrap" class="toast-wrap no-print" aria-live="polite"></div>
+<div id="modalRoot" class="no-print"></div>
 
 <script>
 "use strict";
@@ -278,9 +403,209 @@ filetext:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-widt
 eraser:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"/><path d="M22 21H7"/><path d="m5 11 9 9"/></svg>',
 sprout:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 20h10"/><path d="M10 20c5.5-2.5.8-6.4 3-10"/><path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z"/><path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-3.2.3-4.4 1-4.9 2z"/></svg>',
 chevleft:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>',
-chevright:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>'
+chevright:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>',
+sun:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>',
+moon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>',
+info:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>',
+checkcircle:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.801 10A10 10 0 1 1 17 3.335"/><path d="m9 11 3 3L22 4"/></svg>'
 };
 function ic(n){ return '<span class="svgic" aria-hidden="true">'+(ICONS[n]||"")+'</span>'; }
+
+/* ============ 3b. THEME ============ */
+const THEME_KEY="roh-theme";
+function initTheme(){
+  const b=document.getElementById("themeBtn");
+  if(b) b.addEventListener("click",toggleTheme);
+  updateThemeIcon();
+}
+function toggleTheme(){
+  applyTheme(document.documentElement.getAttribute("data-theme")==="dark"?"light":"dark");
+}
+function applyTheme(t){
+  document.documentElement.setAttribute("data-theme",t);
+  try{ localStorage.setItem(THEME_KEY,t); }catch(e){}
+  updateThemeIcon();
+}
+function updateThemeIcon(){
+  const b=document.getElementById("themeBtn"); if(!b) return;
+  const dark=document.documentElement.getAttribute("data-theme")==="dark";
+  b.innerHTML=ic(dark?"sun":"moon");
+  b.setAttribute("aria-label",dark?"Switch to light mode":"Switch to dark mode");
+}
+
+/* ============ 3c. TOASTS + MODAL ============ */
+function raf(fn){ if(typeof requestAnimationFrame==="function") requestAnimationFrame(fn); else fn(); }
+function toast(msg,type){
+  type=(type==="success"||type==="error")?type:"info";
+  const wrap=document.getElementById("toastWrap"); if(!wrap) return;
+  const el=document.createElement("div");
+  el.className="toast toast-"+type;
+  el.setAttribute("role","status");
+  el.innerHTML=ic(type==="success"?"checkcircle":type==="error"?"alert":"info")+"<span>"+esc(String(msg))+"</span>";
+  wrap.appendChild(el);
+  raf(function(){ el.classList.add("show"); });
+  setTimeout(function(){ el.classList.remove("show"); setTimeout(function(){ el.remove(); },280); },3400);
+  while(wrap.children&&wrap.children.length>3){ wrap.removeChild(wrap.firstChild); }
+}
+function confirmDialog(o){
+  o=Object.assign({title:"Are you sure?",message:"",confirmLabel:"Confirm",cancelLabel:"Cancel",danger:false},o||{});
+  return new Promise(function(resolve){
+    const root=document.getElementById("modalRoot"); if(!root){ resolve(false); return; }
+    root.innerHTML=
+      '<div class="modal-overlay" id="mOverlay"><div class="modal-card" role="alertdialog" aria-modal="true" aria-labelledby="mTitle">'+
+      '<div class="modal-ic'+(o.danger?" danger":"")+'">'+ic(o.danger?"alert":"checksq")+'</div>'+
+      '<h3 id="mTitle">'+esc(o.title)+'</h3>'+
+      (o.message?'<p>'+esc(o.message).replace(/\n/g,"<br>")+'</p>':"")+
+      '<div class="modal-btns"><button class="btn btn-ghost" id="mCancel">'+esc(o.cancelLabel)+'</button>'+
+      '<button class="btn '+(o.danger?"btn-danger-solid":"btn-primary")+'" id="mOk">'+esc(o.confirmLabel)+'</button></div>'+
+      '</div></div>';
+    const btnCancel=document.getElementById("mCancel"), btnOk=document.getElementById("mOk");
+    function close(v){ document.removeEventListener("keydown",onKey); root.innerHTML=""; resolve(v); }
+    function onKey(e){
+      if(e.key==="Escape"){ close(false); }
+      else if(e.key==="Tab"&&btnCancel&&btnOk){
+        if(e.shiftKey&&document.activeElement===btnCancel){ e.preventDefault(); btnOk.focus(); }
+        else if(!e.shiftKey&&document.activeElement===btnOk){ e.preventDefault(); btnCancel.focus(); }
+      }
+    }
+    document.addEventListener("keydown",onKey);
+    document.getElementById("mOverlay").addEventListener("click",function(e){ if(e.target===this) close(false); });
+    btnCancel.onclick=function(){ close(false); };
+    btnOk.onclick=function(){ close(true); };
+    btnCancel.focus();
+  });
+}
+
+/* ============ 3d. EMPTY STATES ============ */
+function emptyState(icon,headline,sub,btnLabel,btnAction){
+  return '<div class="empty-state"><div class="es-ic">'+ic(icon)+'</div>'+
+    '<div class="es-head">'+esc(headline)+'</div>'+
+    (sub?'<div class="es-sub">'+esc(sub)+'</div>':"")+
+    (btnLabel&&btnAction?'<button class="btn btn-primary es-btn" onclick="'+btnAction+'">'+esc(btnLabel)+'</button>':"")+
+  '</div>';
+}
+function emptyInline(icon,text){
+  return '<div class="empty-inline2">'+ic(icon)+'<span>'+esc(text)+'</span></div>';
+}
+
+/* ============ 3e. MOTION HELPERS ============ */
+function reducedMotion(){
+  return typeof window!=="undefined"&&window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+function staggerCards(tabName){
+  if(reducedMotion()) return;
+  const cards=document.querySelectorAll("#tab-"+tabName+" .card");
+  cards.forEach(function(c,i){ c.style.animationDelay=Math.min(i*45,270)+"ms"; });
+}
+function countUp(scope){
+  if(!scope||!scope.querySelectorAll) return;
+  const list=scope.querySelectorAll("[data-count]");
+  list.forEach(function(el){
+    const target=parseFloat(el.getAttribute("data-count"));
+    const fmt=el.getAttribute("data-fmt");
+    const render=function(v){ el.textContent=fmt==="money"?money(v):String(Math.round(v)); };
+    if(!isFinite(target)){ render(0); return; }
+    if(reducedMotion()||typeof requestAnimationFrame!=="function"){ render(target); return; }
+    const dur=650,t0=performance.now();
+    (function step(t){
+      const p=Math.min(1,(t-t0)/dur), e=1-Math.pow(1-p,3);
+      render(target*e);
+      if(p<1) requestAnimationFrame(step); else render(target);
+    })(t0);
+  });
+}
+function animateBars(scope){
+  if(!scope||!scope.querySelectorAll||reducedMotion()) return;
+  scope.querySelectorAll(".bar-fill").forEach(function(f){
+    const w=f.style.width||"0%";
+    f.style.width="0%";
+    raf(function(){ raf(function(){ f.style.width=w; }); });
+  });
+}
+
+/* ============ 3f. SALES TREND CHART ============ */
+const CT={W:560,H:212,PL:48,PR:16,PT:22,PB:28};
+let _trendData=[],_trendMax=1;
+function salesSeries(days){
+  const t=todayISO(),out=[];
+  for(let i=days-1;i>=0;i--){
+    const d=addDaysISO(t,-i);
+    const s=DB.sales.find(function(x){return x.date===d;});
+    out.push({date:d,total:s?((+s.dinein||0)+(+s.takeout||0)+(+s.delivery||0)+(+s.catering||0)):0});
+  }
+  return out;
+}
+function moneyShort(v){ v=Number(v)||0; if(v>=1000) return "$"+(v/1000).toFixed(1).replace(/\.0$/,"")+"k"; return "$"+Math.round(v); }
+function renderSalesTrend(){
+  _trendData=salesSeries(14);
+  const data=_trendData,n=data.length;
+  if(!data.some(function(d){return d.total>0;})){
+    return emptyState("trendup","No sales data yet",
+      "Log daily sales in the Money In tab and your 14-day trend will appear here.",
+      "Log sales","showTab('moneyin')");
+  }
+  _trendMax=Math.max.apply(null,data.map(function(d){return d.total;}).concat([1]));
+  const max=_trendMax;
+  const iw=CT.W-CT.PL-CT.PR, ih=CT.H-CT.PT-CT.PB;
+  const x=function(i){return CT.PL+iw*(i/(n-1));};
+  const y=function(v){return CT.PT+ih*(1-v/max);};
+  let grid="";
+  for(let g=0;g<=3;g++){
+    const gv=max*g/3, gy=y(gv).toFixed(1);
+    grid+='<line class="ct-grid" x1="'+CT.PL+'" y1="'+gy+'" x2="'+(CT.W-CT.PR)+'" y2="'+gy+'"/>'+
+      '<text class="ct-vallbl" x="'+(CT.PL-8)+'" y="'+(Number(gy)+3.5)+'" text-anchor="end">'+moneyShort(gv)+'</text>';
+  }
+  const pts=data.map(function(d,i){return [x(i),y(d.total)];});
+  const line="M"+pts.map(function(p){return p[0].toFixed(1)+","+p[1].toFixed(1);}).join(" L");
+  const area=line+" L"+x(n-1).toFixed(1)+","+(CT.H-CT.PB)+" L"+x(0).toFixed(1)+","+(CT.H-CT.PB)+" Z";
+  let mi=0,ma=0;
+  data.forEach(function(d,i){ if(d.total<data[mi].total) mi=i; if(d.total>data[ma].total) ma=i; });
+  let mml="";
+  if(mi===ma){
+    mml='<text class="ct-mmlbl" x="'+x(mi).toFixed(1)+'" y="'+(y(data[mi].total)-10).toFixed(1)+'" text-anchor="middle">Steady '+moneyShort(data[mi].total)+'</text>';
+  }else{
+    const maAbove=y(data[ma].total)>=CT.PT+18;
+    mml='<text class="ct-mmlbl" x="'+x(ma).toFixed(1)+'" y="'+(y(data[ma].total)+(maAbove?-10:18)).toFixed(1)+'" text-anchor="middle">High '+moneyShort(data[ma].total)+'</text>';
+    const miAbove=y(data[mi].total)>CT.H-CT.PB-34;
+    mml+='<text class="ct-mmlbl" x="'+x(mi).toFixed(1)+'" y="'+(y(data[mi].total)+(miAbove?-10:18)).toFixed(1)+'" text-anchor="middle">Low '+moneyShort(data[mi].total)+'</text>';
+  }
+  let xlbl="";
+  data.forEach(function(d,i){
+    if(i%2!==0) return;
+    const lbl=parseISO(d.date).toLocaleDateString("en-CA",{month:"short",day:"numeric"});
+    xlbl+='<text class="ct-axlbl" x="'+x(i).toFixed(1)+'" y="'+(CT.H-8)+'" text-anchor="middle">'+esc(lbl)+'</text>';
+  });
+  const avg=data.slice(-7).reduce(function(s,d){return s+d.total;},0)/7;
+  const ay=y(avg).toFixed(1);
+  const avgLine='<line class="ct-avg" x1="'+CT.PL+'" y1="'+ay+'" x2="'+(CT.W-CT.PR)+'" y2="'+ay+'"/>'+
+    '<text class="ct-avglbl" x="'+(CT.W-CT.PR)+'" y="'+(Number(ay)-6)+'" text-anchor="end">7-day avg '+moneyShort(avg)+'</text>';
+  const dots=pts.map(function(p){return '<circle class="ct-pt" cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="3.5"/>';}).join("");
+  const tot14=data.reduce(function(s,d){return s+d.total;},0);
+  const svg='<svg id="salesChart" class="sales-chart" viewBox="0 0 '+CT.W+' '+CT.H+'" role="img" aria-label="Daily sales for the last 14 days, total '+money(tot14)+'">'+
+    grid+avgLine+'<path class="ct-area" d="'+area+'"/>'+
+    '<path class="ct-line" pathLength="1" d="'+line+'"/>'+dots+mml+xlbl+
+    '<rect class="ct-hit" x="'+CT.PL+'" y="'+CT.PT+'" width="'+iw+'" height="'+ih+'" fill="transparent"/></svg>';
+  return '<div class="chart-wrap" id="trendWrap">'+svg+'<div class="chart-tip" id="chartTip" aria-hidden="true"></div></div>';
+}
+function bindChartTip(){
+  const wrap=document.getElementById("trendWrap"), tip=document.getElementById("chartTip"), svg=document.getElementById("salesChart");
+  if(!wrap||!tip||!svg||!_trendData.length) return;
+  const n=_trendData.length, iw=CT.W-CT.PL-CT.PR, ih=CT.H-CT.PT-CT.PB;
+  function show(ev){
+    const r=svg.getBoundingClientRect(); if(!r.width) return;
+    const cx=(ev.clientX-r.left)/(r.width/CT.W);
+    let i=Math.round(((cx-CT.PL)/iw)*(n-1)); i=Math.max(0,Math.min(n-1,i));
+    const d=_trendData[i];
+    const px=CT.PL+iw*(i/(n-1)), py=CT.PT+ih*(1-d.total/_trendMax);
+    tip.innerHTML=esc(fmtDate(d.date))+'<span class="tt-sub">'+money(d.total)+'</span>';
+    tip.style.left=(px/CT.W*100)+"%";
+    tip.style.top=(py/CT.H*100)+"%";
+    tip.style.opacity="1";
+  }
+  function hide(){ tip.style.opacity="0"; }
+  svg.addEventListener("pointermove",show);
+  svg.addEventListener("pointerleave",hide);
+}
 
 function money(n){ const v=Number(n)||0; return "$"+v.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,","); }
 // Validate a numeric field: returns number, or null if blank/invalid. min = lowest allowed.
@@ -325,14 +650,14 @@ function loadDB(){
 }
 function saveDB(){
   try{ localStorage.setItem(DB_KEY, JSON.stringify(DB)); }
-  catch(e){ alert("Could not save — storage may be full (large receipt photos are the usual cause). Try deleting old receipt photos."); }
+  catch(e){ toast("Could not save — storage may be full (large receipt photos are the usual cause). Try deleting old receipt photos.","error"); }
 }
 function staffById(id){ return DB.staff.find(s=>s.id===id); }
 function staffName(id){ const s=staffById(id); return s? s.name : "(removed staff)"; }
 
 /* ---------------- 4. SAMPLE DATA ---------------- */
 function seedSampleData(){
-  if(DB.seeded && DB.seedIds.length){ alert("Sample data is already loaded."); return; }
+  if(DB.seeded && DB.seedIds.length){ toast("Sample data is already loaded.","info"); return; }
   const ids=[]; const keep=(o)=>{ids.push(o.id);return o;};
   const T = todayISO(), mon = mondayISO(T);
   // --- 6 staff ---
@@ -405,15 +730,17 @@ function seedSampleData(){
   DB.seeded=true; DB.seedIds=ids; saveDB();
 }
 function clearSampleData(){
-  if(!DB.seedIds.length){ alert("No sample data to clear."); return; }
-  if(!confirm("Remove all sample data? Anything you added yourself stays.")) return;
-  const gone=new Set(DB.seedIds);
-  ["staff","shifts","clock","sales","invoices","expenses","bills","checklists"].forEach(k=>{
-    DB[k]=DB[k].filter(o=>!gone.has(o.id));
+  if(!DB.seedIds.length){ toast("No sample data to clear.","info"); return; }
+  confirmDialog({title:"Clear sample data?",message:"Removes all sample data. Anything you added yourself stays.",confirmLabel:"Clear data",danger:true}).then(function(ok){
+    if(!ok) return;
+    const gone=new Set(DB.seedIds);
+    ["staff","shifts","clock","sales","invoices","expenses","bills","checklists"].forEach(k=>{
+      DB[k]=DB[k].filter(o=>!gone.has(o.id));
+    });
+    DB.checklists.forEach(cl=>{ cl.items=cl.items.filter(i=>!gone.has(i.id)); });
+    DB.seeded=false; DB.seedIds=[]; saveDB();
+    toast("Sample data cleared — you're starting fresh.","success");
   });
-  DB.checklists.forEach(cl=>{ cl.items=cl.items.filter(i=>!gone.has(i.id)); });
-  DB.seeded=false; DB.seedIds=[]; saveDB();
-  alert("Sample data cleared — you're starting fresh.");
 }
 
 /* ---------------- 5. NAVIGATION ---------------- */
@@ -442,6 +769,7 @@ function showTab(name){
     b.classList.toggle("active", b.getAttribute("data-tab")===name));
   window.scrollTo(0,0);
   RENDER[name]();
+  staggerCards(name);
 }
 // Shift helpers
 function shiftsOn(dateISO){ return DB.shifts.filter(s=>s.date===dateISO)
@@ -474,17 +802,23 @@ function renderHome(){
     '<div class="card"><h3>Today — '+fmtDate(t)+'</h3>'+
     '<p class="hint" style="margin-top:0">Welcome back! Here\'s '+esc(name)+' at a glance.</p>'+
     '<div class="stat-grid">'+
-      stat(ic("users")+" On shift today", onToday.length, onToday.map(s=>esc(staffName(s.staffId))).join(", ")||"Nobody scheduled")+
-      stat(ic("checksq")+" Open tasks", openTasks, "across all checklists")+
-      stat(ic("receipt")+" Bills to pay", unpaid.length, money(owing)+" owing")+
-      stat(ic("trendup")+" Sales this week", money(weekSales), fmtDate(w0)+" – "+fmtDate(w1))+
-      stat(ic("clock")+" Labour cost (week)", money(labour), "from time clock")+
-      stat(ic("barchart")+" Net estimate (week)", money(weekSales-labour-expenseTotal(w0,w1)), "sales − labour − expenses")+
+      stat(ic("users")+" On shift today", onToday.length, "int", onToday.map(s=>esc(staffName(s.staffId))).join(", ")||"Nobody scheduled")+
+      stat(ic("checksq")+" Open tasks", openTasks, "int", "across all checklists")+
+      stat(ic("receipt")+" Bills to pay", unpaid.length, "int", money(owing)+" owing")+
+      stat(ic("trendup")+" Sales this week", weekSales, "money", fmtDate(w0)+" – "+fmtDate(w1))+
+      stat(ic("clock")+" Labour cost (week)", labour, "money", "from time clock")+
+      stat(ic("barchart")+" Net estimate (week)", weekSales-labour-expenseTotal(w0,w1), "money", "sales − labour − expenses")+
     '</div></div>'+
+    '<div class="card"><div class="card-head"><h3>'+ic("trendup")+' Sales trend</h3><span class="pill">Last 14 days</span></div>'+renderSalesTrend()+'</div>'+
     '<div class="btn-row"><button class="btn btn-primary" onclick="showTab(\'clock\')">'+ic("clock")+' Open Time Clock</button>'+
     '<button class="btn btn-ghost" onclick="showTab(\'schedule\')">'+ic("calendar")+' This Week\'s Schedule</button></div>';
-  function stat(lbl,numV,det){ return '<div class="stat"><div class="lbl">'+lbl+'</div><div class="num">'+numV+
-    '</div><div class="det">'+det+'</div></div>'; }
+  countUp(document.getElementById("view-home"));
+  bindChartTip();
+  function stat(lbl,raw,fmt,det){
+    const disp=fmt==="money"?money(raw):String(raw);
+    return '<div class="stat"><div class="lbl">'+lbl+'</div><div class="num" data-count="'+raw+'" data-fmt="'+fmt+'">'+esc(disp)+
+    '</div><div class="det">'+det+'</div></div>';
+  }
 }
 function expenseTotal(fromISO,toISO){
   return DB.expenses.filter(e=>e.date>=fromISO&&e.date<=toISO).reduce((n,e)=>n+e.amount,0);
@@ -499,7 +833,7 @@ function renderSchedule(){
   let h='<div class="card"><h3>Who\'s on today</h3>';
   const t0=shiftsOn(todayISO());
   h+= t0.length? t0.map(s=>'<div class="kv"><span class="k">'+esc(staffName(s.staffId))+' <span class="pill">'+esc(s.role||"")+'</span></span><span class="v">'+esc(s.start)+'–'+esc(s.end)+'</span></div>').join("")
-      : '<p class="hint">Nobody scheduled today.</p>';
+      : emptyInline("calendar","Nobody scheduled today.");
   h+='</div>';
   h+='<div class="btn-row no-print"><button class="btn btn-ghost" onclick="schedOffset--;renderSchedule()">'+ic("chevleft")+' Prev week</button>'+
      '<button class="btn btn-ghost" onclick="schedOffset=0;renderSchedule()">This week</button>'+
@@ -518,7 +852,7 @@ function renderSchedule(){
       '<td class="td-act no-print"><button class="icon-btn" onclick="openShiftForm(\''+s.id+'\')" aria-label="Edit shift" title="Edit">'+ic("pencil")+'</button> '+
       '<button class="icon-btn danger" onclick="deleteShift(\''+s.id+'\')" aria-label="Delete shift" title="Delete">'+ic("trash")+'</button></td></tr>').join("")+
       '</tbody></table></div>'
-      : '<p class="hint empty-inline">No shifts scheduled.</p>';
+      : emptyInline("calendar","No shifts scheduled.");
     h+='</div>';
   });
   // shift add/edit form
@@ -539,7 +873,7 @@ function renderSchedule(){
   const f=document.getElementById("shiftForm"); if(f) f.scrollIntoView({block:"nearest"});
 }
 function openShiftForm(id,dateISO){
-  if(!DB.staff.length){ alert("Add staff members first (Staff tab)."); return; }
+  if(!DB.staff.length){ toast("Add staff members first (Staff tab).","info"); return; }
   if(id){ const s=DB.shifts.find(x=>x.id===id); shiftDraft={id:s.id,staffId:s.staffId,date:s.date,start:s.start,end:s.end,role:s.role}; }
   else shiftDraft={id:null,staffId:DB.staff[0].id,date:dateISO||todayISO(),start:"09:00",end:"17:00",role:""};
   renderSchedule();
@@ -551,15 +885,17 @@ function saveShift(){
   const start=document.getElementById("sfStart").value;
   const end=document.getElementById("sfEnd").value;
   const role=document.getElementById("sfRole").value.trim();
-  if(!date||!start||!end){ alert("Please fill in date, start and end times."); return; }
-  if(end<=start){ alert("End time must be after start time."); return; }
+  if(!date||!start||!end){ toast("Please fill in date, start and end times.","error"); return; }
+  if(end<=start){ toast("End time must be after start time.","error"); return; }
   if(d.id){ const s=DB.shifts.find(x=>x.id===d.id); Object.assign(s,{staffId,date,start,end,role}); }
   else DB.shifts.push({id:uid(),staffId,date,start,end,role});
   shiftDraft=null; saveDB(); renderSchedule();
 }
 function deleteShift(id){
-  if(!confirm("Delete this shift?")) return;
-  DB.shifts=DB.shifts.filter(s=>s.id!==id); saveDB(); renderSchedule();
+  confirmDialog({title:"Delete this shift?",message:"The shift will be removed from the schedule.",confirmLabel:"Delete shift",danger:true}).then(function(ok){
+    if(!ok) return;
+    DB.shifts=DB.shifts.filter(s=>s.id!==id); saveDB(); renderSchedule();
+  });
 }
 
 /* ---------------- 8. TIME CLOCK ---------------- */
@@ -569,7 +905,7 @@ function renderClock(){
   h+= open.length? open.map(e=>'<div class="kv"><span class="k">'+esc(staffName(e.staffId))+
       ' <span class="hint">since '+fmtDateTime(e.in)+'</span></span>'+
       '<span><button class="btn btn-ghost no-print" style="min-height:44px;padding:8px 14px" onclick="clockOut(\''+e.id+'\')">Clock out</button></span></div>').join("")
-      : '<p class="hint">Nobody is clocked in.</p>';
+      : emptyState("clock","Nobody clocked in","Use the form below to clock a team member in.");
   h+='</div>';
   h+='<div class="card no-print"><h3>Clock in</h3><div class="field"><label>Staff member</label><select id="ciStaff">'+
       DB.staff.map(s=>'<option value="'+s.id+'">'+esc(s.name)+'</option>').join("")+'</select></div>'+
@@ -582,7 +918,7 @@ function renderClock(){
       '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Staff</th><th class="num">Hours</th><th class="num">Rate</th><th class="num">Cost</th></tr></thead><tbody>'+
       rows.map(s=>'<tr><td>'+esc(s.name)+'</td><td class="num">'+hrs[s.id].toFixed(2)+'</td><td class="num">'+money(s.wage)+'/hr</td><td class="num"><b>'+money(hrs[s.id]*s.wage)+'</b></td></tr>').join("")+
       '</tbody></table></div>'
-      : '<p class="hint">No hours recorded yet this week.</p>';
+      : emptyState("clock","No hours recorded yet","Clocked-in time will show up here automatically.");
   h+='<p class="hint">These hours feed the Payroll tab automatically.</p></div>';
   // recent timesheet
   const recent=DB.clock.slice().sort((a,b)=>b.in.localeCompare(a.in)).slice(0,20);
@@ -590,14 +926,14 @@ function renderClock(){
   h+= recent.length? recent.map(e=>'<div class="item"><div class="row1"><div><b>'+esc(staffName(e.staffId))+'</b>'+
       '<div class="meta">In: '+fmtDateTime(e.in)+(e.out?'<br>Out: '+fmtDateTime(e.out)+' ('+hoursBetween(e.in,e.out).toFixed(2)+' hrs)':'<br><span class="tag tag-info">Still clocked in</span>')+'</div></div>'+
       '<div class="no-print"><button class="icon-btn" onclick="deleteClockEntry(\''+e.id+'\')">'+ic("trash")+'</button></div></div></div>').join("")
-      : '<p class="hint">No time entries yet.</p>';
+      : emptyState("filetext","No time entries yet","Clock in above to start tracking hours.");
   h+='</div>';
   document.getElementById("view-clock").innerHTML=h;
 }
 function clockIn(){
-  if(!DB.staff.length){ alert("Add staff members first (Staff tab)."); return; }
+  if(!DB.staff.length){ toast("Add staff members first (Staff tab).","info"); return; }
   const staffId=document.getElementById("ciStaff").value;
-  if(DB.clock.some(e=>e.staffId===staffId&&!e.out)){ alert(staffName(staffId)+" is already clocked in."); return; }
+  if(DB.clock.some(e=>e.staffId===staffId&&!e.out)){ toast(staffName(staffId)+" is already clocked in.","info"); return; }
   const now=new Date();
   const iso=isoOf(now)+"T"+String(now.getHours()).padStart(2,"0")+":"+String(now.getMinutes()).padStart(2,"0")+":00";
   DB.clock.push({id:uid(),staffId,in:iso,out:null}); saveDB(); renderClock();
@@ -606,12 +942,14 @@ function clockOut(id){
   const e=DB.clock.find(x=>x.id===id); if(!e) return;
   const now=new Date();
   e.out=isoOf(now)+"T"+String(now.getHours()).padStart(2,"0")+":"+String(now.getMinutes()).padStart(2,"0")+":00";
-  if(new Date(e.out)<=new Date(e.in)){ alert("Clock-out must be after clock-in."); return; }
+  if(new Date(e.out)<=new Date(e.in)){ toast("Clock-out must be after clock-in.","error"); return; }
   saveDB(); renderClock();
 }
 function deleteClockEntry(id){
-  if(!confirm("Delete this time entry? This changes payroll hours.")) return;
-  DB.clock=DB.clock.filter(e=>e.id!==id); saveDB(); renderClock();
+  confirmDialog({title:"Delete this time entry?",message:"This changes payroll hours.",confirmLabel:"Delete entry",danger:true}).then(function(ok){
+    if(!ok) return;
+    DB.clock=DB.clock.filter(e=>e.id!==id); saveDB(); renderClock();
+  });
 }
 
 /* ---------------- 9. PAYROLL (ESTIMATES ONLY) ---------------- */
@@ -675,22 +1013,22 @@ function renderPayroll(){
       '<td class="num">'+r.hours.toFixed(2)+'</td><td class="num">'+money(r.gross)+'</td><td class="num"><b>'+money(r.net)+'</b></td>'+
       '<td class="td-act no-print"><button class="icon-btn danger" onclick="deletePayRun(\''+r.id+'\')" title="Delete pay run" aria-label="Delete pay run">'+ic("trash")+'</button></td></tr>').join("")+
       '</tbody></table></div>'
-      : '<p class="hint">No pay runs saved yet.</p>';
+      : emptyState("banknote","No saved pay runs","Calculate an estimate above, then save it here for your records.");
   h+='</div>';
   document.getElementById("view-payroll").innerHTML=h;
 }
 function calcPayroll(){
   const staff=staffById(payCtx.staffId);
-  if(!staff){ alert("Add a staff member first."); return; }
+  if(!staff){ toast("Add a staff member first.","info"); return; }
   const hours=num(document.getElementById("prHours").value,0);
-  if(hours==null){ alert("Enter valid hours (0 or more)."); return; }
+  if(hours==null){ toast("Enter valid hours (0 or more).","error"); return; }
   payCtx.hours=hours;
   const pEnd = payCtx.periodType==="biweekly"? addDaysISO(payCtx.periodStart,13)
              : payCtx.periodType==="monthly"? addDaysISO(payCtx.periodStart,30) : addDaysISO(payCtx.periodStart,6);
   const r=payrollEstimate(hours*staff.wage, payCtx.periodType);
   const row=(k,v,est)=>'<div class="kv"><span class="k">'+k+(est?' <span class="hint">est.</span>':"")+'</span><span class="v">'+money(v)+'</span></div>';
   document.getElementById("payResult").innerHTML=
-    '<div class="card" style="background:#FFFDF7"><h3>'+esc(staff.name)+' — pay estimate</h3>'+
+    '<div class="card" style="background:var(--card-hi)"><h3>'+esc(staff.name)+' — pay estimate</h3>'+
     row("Hours × wage", hours.toFixed(2)+" × "+money(staff.wage), false)+
     row("Gross pay", r.gross, true)+ row("CPP", r.cpp, true)+ row("EI", r.ei, true)+
     row("Federal tax", r.fedTax, true)+ row("Ontario tax", r.onTax, true)+
@@ -704,17 +1042,19 @@ function savePayRun(r){
     periodType:payCtx.periodType,periodStart:payCtx.periodStart,periodEnd:r.periodEnd,
     hours:r.hours,gross:r.gross,cpp:r.cpp,ei:r.ei,fedTax:r.fedTax,onTax:r.onTax,total:r.total,net:r.net,
     tips:0,savedAt:new Date().toISOString()});
-  saveDB(); renderPayroll(); alert("Pay run saved.");
+  saveDB(); renderPayroll(); toast("Pay run saved.","success");
 }
 function deletePayRun(id){
-  if(!confirm("Delete this saved pay run?")) return;
-  DB.payRuns=DB.payRuns.filter(r=>r.id!==id); saveDB(); renderPayroll();
+  confirmDialog({title:"Delete this saved pay run?",message:"The saved estimate will be removed.",confirmLabel:"Delete",danger:true}).then(function(ok){
+    if(!ok) return;
+    DB.payRuns=DB.payRuns.filter(r=>r.id!==id); saveDB(); renderPayroll();
+  });
 }
 function calcTips(){
   const from=document.getElementById("tipFrom").value, to=document.getElementById("tipTo").value;
   const total=num(document.getElementById("tipTotal").value,0);
-  if(!from||!to||total==null){ alert("Enter a date range and a valid tip total."); return; }
-  if(to<from){ alert("End date must be after start date."); return; }
+  if(!from||!to||total==null){ toast("Enter a date range and a valid tip total.","error"); return; }
+  if(to<from){ toast("End date must be after start date.","error"); return; }
   const hrs=hoursInRange(from,to);
   const sumH=Object.values(hrs).reduce((a,b)=>a+b,0);
   if(sumH<=0){ document.getElementById("tipResult").innerHTML='<p class="hint">No clocked hours in that range — nothing to split.</p>'; return; }
@@ -749,7 +1089,7 @@ function renderMoneyIn(){
     return '<div class="item"><div class="row1"><div><b>'+fmtDate(s.date)+'</b> — <b>'+money(t)+'</b>'+
     '<div class="meta">Dine-in '+money(s.dinein)+' • Takeout '+money(s.takeout)+' • Delivery '+money(s.delivery)+' • Catering '+money(s.catering)+'</div></div>'+
     '<div class="no-print"><button class="icon-btn" onclick="deleteSale(\''+s.id+'\')">'+ic("trash")+'</button></div></div></div>';}).join("")
-    : '<p class="hint">No sales logged yet.</p>';
+    : emptyState("trendup","No sales logged yet","Use the form above to log today's sales.");
   h+='</div>';
   // invoice creator
   h+='<div class="card no-print"><h3>'+ic("receipt")+' New invoice <span class="hint">(catering / events)</span></h3>'+
@@ -773,7 +1113,7 @@ function renderMoneyIn(){
     '<div class="meta">Due '+fmtDate(inv.dueDate)+' • '+money(t)+' • '+inv.items.length+' line(s)</div></div>'+
     '<div class="no-print"><button class="icon-btn" onclick="toggleInvoicePaid(\''+inv.id+'\')" title="Toggle paid">'+(inv.paid?ic("undo"):ic("check"))+'</button> '+
     '<button class="icon-btn" onclick="deleteInvoice(\''+inv.id+'\')">'+ic("trash")+'</button></div></div></div>';}).join("")
-    : '<p class="hint">No invoices yet.</p>';
+    : emptyState("receipt","No invoices yet","Create catering and event invoices with the form above.");
   h+='</div>';
   document.getElementById("view-moneyin").innerHTML=h;
 }
@@ -794,20 +1134,30 @@ function saveSale(){
   DB.sales.push({id:uid(),date,dinein:dine,takeout:take,delivery:del,catering:cat});
   saveDB(); renderMoneyIn();
 }
-function deleteSale(id){ if(!confirm("Delete this sales entry?"))return; DB.sales=DB.sales.filter(s=>s.id!==id); saveDB(); renderMoneyIn(); }
+function deleteSale(id){
+  confirmDialog({title:"Delete this sales entry?",message:"The entry will be removed from your records.",confirmLabel:"Delete",danger:true}).then(function(ok){
+    if(!ok) return;
+    DB.sales=DB.sales.filter(s=>s.id!==id); saveDB(); renderMoneyIn();
+  });
+}
 function saveInvoice(){
   const client=document.getElementById("invClient").value.trim();
   const due=document.getElementById("invDue").value;
   const items=invDraft.map(r=>({desc:r.desc.trim(),amount:num(r.amount,0)}))
     .filter(r=>r.desc&&r.amount!=null&&r.amount>0);
-  if(!client){ alert("Enter a client name."); return; }
-  if(!due){ alert("Enter a due date."); return; }
-  if(!items.length){ alert("Add at least one line item with a description and amount."); return; }
+  if(!client){ toast("Enter a client name.","error"); return; }
+  if(!due){ toast("Enter a due date.","error"); return; }
+  if(!items.length){ toast("Add at least one line item with a description and amount.","error"); return; }
   DB.invoices.push({id:uid(),client,dueDate:due,paid:false,createdAt:todayISO(),items});
   invDraft=[{desc:"",amount:""}]; saveDB(); renderMoneyIn();
 }
 function toggleInvoicePaid(id){ const i=DB.invoices.find(x=>x.id===id); i.paid=!i.paid; saveDB(); renderMoneyIn(); }
-function deleteInvoice(id){ if(!confirm("Delete this invoice?"))return; DB.invoices=DB.invoices.filter(i=>i.id!==id); saveDB(); renderMoneyIn(); }
+function deleteInvoice(id){
+  confirmDialog({title:"Delete this invoice?",message:"The invoice and its line items will be removed.",confirmLabel:"Delete",danger:true}).then(function(ok){
+    if(!ok) return;
+    DB.invoices=DB.invoices.filter(i=>i.id!==id); saveDB(); renderMoneyIn();
+  });
+}
 
 /* ---------------- 11. MONEY OUT ---------------- */
 let pendingReceipt=null; // dataURL of compressed receipt photo, set by file input
@@ -834,7 +1184,7 @@ function renderMoneyOut(){
     '<div class="meta">'+fmtDate(e.date)+(e.hst?' • HST '+money(e.hst):"")+(e.note?" • "+esc(e.note):"")+'</div>'+
     (e.receipt?'<img class="thumb" src="'+e.receipt+'" alt="receipt photo">':"")+'</div>'+
     '<div class="no-print"><button class="icon-btn" onclick="deleteExpense(\''+e.id+'\')">'+ic("trash")+'</button></div></div></div>').join("")
-    : '<p class="hint">No expenses logged yet.</p>';
+    : emptyState("trenddown","No expenses logged yet","Log your first expense with the form above.");
   h+='</div>';
   // bills
   h+='<div class="card no-print"><h3>Add a supplier bill</h3>'+
@@ -846,7 +1196,7 @@ function renderMoneyOut(){
   const bills=DB.bills.slice().sort((a,b)=>a.dueDate.localeCompare(b.dueDate));
   h+='<div class="card"><div class="card-head"><h3>Supplier bills</h3><span class="pill">'+bills.filter(b=>!b.paid).length+' unpaid</span></div>';
   h+= bills.length?
-    '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Supplier</th><th>Due</th><th class="num">Amount</th><th>Status</th><th class="th-act no-print"><span class="sr">Actions</span></th></tr></thead><tbody>'+
+    '<div class="tbl-wrap tall"><table class="tbl"><thead><tr><th>Supplier</th><th>Due</th><th class="num">Amount</th><th>Status</th><th class="th-act no-print"><span class="sr">Actions</span></th></tr></thead><tbody>'+
     bills.map(b=>{const overdue=!b.paid&&b.dueDate<todayISO();
     return '<tr'+(overdue?' class="row-overdue"':'')+'><td><b>'+esc(b.supplier)+'</b>'+(b.note?'<div class="meta">'+esc(b.note)+'</div>':"")+'</td>'+
     '<td class="meta">'+fmtDate(b.dueDate)+'</td><td class="num"><b>'+money(b.amount)+'</b></td>'+
@@ -854,7 +1204,7 @@ function renderMoneyOut(){
     '<td class="td-act no-print"><button class="icon-btn" onclick="toggleBillPaid(\''+b.id+'\')" title="Toggle paid" aria-label="Toggle paid">'+(b.paid?ic("undo"):ic("check"))+'</button> '+
     '<button class="icon-btn danger" onclick="deleteBill(\''+b.id+'\')" title="Delete bill" aria-label="Delete bill">'+ic("trash")+'</button></td></tr>';}).join("")+
     '</tbody></table></div>'
-    : '<p class="hint empty-inline">No bills yet.</p>';
+    : emptyState("filetext","No supplier bills","Add a bill above and never miss a due date.");
   h+='</div>';
   document.getElementById("view-moneyout").innerHTML=h;
   document.getElementById("exFile").addEventListener("change",handleReceipt);
@@ -872,9 +1222,9 @@ function handleReceipt(ev){
       pendingReceipt=c.toDataURL("image/jpeg",0.65);
       document.getElementById("exPrev").innerHTML='<img class="thumb" src="'+pendingReceipt+'" alt="receipt preview">';
       URL.revokeObjectURL(img.src);
-    }catch(e){ alert("Could not process that photo."); }
+    }catch(e){ toast("Could not process that photo.","error"); }
   };
-  img.onerror=function(){ alert("Could not read that photo."); };
+  img.onerror=function(){ toast("Could not read that photo.","error"); };
   img.src=URL.createObjectURL(f);
 }
 function saveExpense(){
@@ -883,24 +1233,34 @@ function saveExpense(){
   const hst=num(document.getElementById("exHst").value,0)||0;
   const category=document.getElementById("exCat").value;
   const note=document.getElementById("exNote").value.trim();
-  if(!date){ alert("Enter a date."); return; }
-  if(amount==null){ alert("Enter a valid amount (0 or more)."); return; }
+  if(!date){ toast("Enter a date.","error"); return; }
+  if(amount==null){ toast("Enter a valid amount (0 or more).","error"); return; }
   DB.expenses.push({id:uid(),date,category,amount,hst,note,receipt:pendingReceipt});
   pendingReceipt=null; saveDB(); renderMoneyOut();
 }
-function deleteExpense(id){ if(!confirm("Delete this expense?"))return; DB.expenses=DB.expenses.filter(e=>e.id!==id); saveDB(); renderMoneyOut(); }
+function deleteExpense(id){
+  confirmDialog({title:"Delete this expense?",message:"The expense will be removed from your records.",confirmLabel:"Delete",danger:true}).then(function(ok){
+    if(!ok) return;
+    DB.expenses=DB.expenses.filter(e=>e.id!==id); saveDB(); renderMoneyOut();
+  });
+}
 function saveBill(){
   const supplier=document.getElementById("biSup").value.trim();
   const amount=num(document.getElementById("biAmt").value,0);
   const dueDate=document.getElementById("biDue").value;
   const note=document.getElementById("biNote").value.trim();
-  if(!supplier){ alert("Enter the supplier name."); return; }
-  if(amount==null){ alert("Enter a valid amount (0 or more)."); return; }
-  if(!dueDate){ alert("Enter a due date."); return; }
+  if(!supplier){ toast("Enter the supplier name.","error"); return; }
+  if(amount==null){ toast("Enter a valid amount (0 or more).","error"); return; }
+  if(!dueDate){ toast("Enter a due date.","error"); return; }
   DB.bills.push({id:uid(),supplier,amount,dueDate,paid:false,note}); saveDB(); renderMoneyOut();
 }
 function toggleBillPaid(id){ const b=DB.bills.find(x=>x.id===id); b.paid=!b.paid; saveDB(); renderMoneyOut(); }
-function deleteBill(id){ if(!confirm("Delete this bill?"))return; DB.bills=DB.bills.filter(b=>b.id!==id); saveDB(); renderMoneyOut(); }
+function deleteBill(id){
+  confirmDialog({title:"Delete this bill?",message:"The bill will be removed from your records.",confirmLabel:"Delete",danger:true}).then(function(ok){
+    if(!ok) return;
+    DB.bills=DB.bills.filter(b=>b.id!==id); saveDB(); renderMoneyOut();
+  });
+}
 
 /* ---------------- 12. TASKS / CHECKLISTS ---------------- */
 function renderTasks(){
@@ -924,6 +1284,7 @@ function renderTasks(){
     '<input id="newClName" placeholder="e.g. Patio closing"></div>'+
     '<div class="field"><label><input type="checkbox" id="newClDaily" checked style="width:22px;height:22px;vertical-align:middle"> Resets every day</label></div>'+
     '<button class="btn btn-primary" onclick="addChecklist()">Create checklist</button></div>';
+  if(!DB.checklists.length) h+=emptyState("checksq","No checklists yet","Create your first checklist above — daily ones reset every morning.");
   h+='<p class="hint">Daily checklists reset automatically each morning — yesterday\'s ticks don\'t carry over.</p>';
   document.getElementById("view-tasks").innerHTML=h;
 }
@@ -934,24 +1295,28 @@ function toggleTaskItem(clId,itemId){
 }
 function addTaskItem(clId){
   const inp=document.getElementById("ni-"+clId); const text=inp.value.trim();
-  if(!text){ alert("Type the task first."); return; }
+  if(!text){ toast("Type the task first.","error"); return; }
   DB.checklists.find(c=>c.id===clId).items.push({id:uid(),text,doneDate:null});
   saveDB(); renderTasks();
 }
 function deleteTaskItem(clId,itemId){
-  if(!confirm("Delete this task?"))return;
-  const cl=DB.checklists.find(c=>c.id===clId); cl.items=cl.items.filter(i=>i.id!==itemId);
-  saveDB(); renderTasks();
+  confirmDialog({title:"Delete this task?",message:"The task will be removed from the checklist.",confirmLabel:"Delete",danger:true}).then(function(ok){
+    if(!ok) return;
+    const cl=DB.checklists.find(c=>c.id===clId); cl.items=cl.items.filter(i=>i.id!==itemId);
+    saveDB(); renderTasks();
+  });
 }
 function addChecklist(){
   const name=document.getElementById("newClName").value.trim();
-  if(!name){ alert("Give the checklist a name."); return; }
+  if(!name){ toast("Give the checklist a name.","error"); return; }
   DB.checklists.push({id:uid(),name,daily:document.getElementById("newClDaily").checked,items:[]});
   saveDB(); renderTasks();
 }
 function deleteChecklist(id){
-  if(!confirm("Delete this whole checklist and its tasks?"))return;
-  DB.checklists=DB.checklists.filter(c=>c.id!==id); saveDB(); renderTasks();
+  confirmDialog({title:"Delete this checklist?",message:"The whole checklist and its tasks will be removed.",confirmLabel:"Delete checklist",danger:true}).then(function(ok){
+    if(!ok) return;
+    DB.checklists=DB.checklists.filter(c=>c.id!==id); saveDB(); renderTasks();
+  });
 }
 
 /* ---------------- 13. STAFF DIRECTORY ---------------- */
@@ -982,7 +1347,7 @@ function renderStaff(){
       '<div class="btn-row no-print"><button class="btn btn-ghost" onclick=\'staffDraft='+attrJSON({id:s.id,name:s.name,role:s.role,phone:s.phone,wage:s.wage,hireDate:s.hireDate,notes:s.notes})+';renderStaff()\'>'+ic("pencil")+' Edit</button>'+
       '<button class="btn btn-danger" onclick="deleteStaff(\''+s.id+'\')">'+ic("trash")+' Remove</button></div></div>';
   });
-  if(!DB.staff.length && !staffDraft) h+='<div class="empty">No staff yet — add your team above.</div>';
+  if(!DB.staff.length && !staffDraft) h+=emptyState("users","No staff yet","Add your team with the button above to start scheduling.");
   document.getElementById("view-staff").innerHTML=h;
   const f=document.getElementById("stName"); if(f) f.focus();
 }
@@ -990,8 +1355,8 @@ function saveStaff(){
   const d=staffDraft||{};
   const name=document.getElementById("stName").value.trim();
   const wage=num(document.getElementById("stWage").value,0);
-  if(!name){ alert("Enter the staff member's name."); return; }
-  if(wage==null){ alert("Enter a valid hourly wage (0 or more)."); return; }
+  if(!name){ toast("Enter the staff member's name.","error"); return; }
+  if(wage==null){ toast("Enter a valid hourly wage (0 or more).","error"); return; }
   const rec={name,role:document.getElementById("stRole").value.trim(),
     phone:document.getElementById("stPhone").value.trim(),wage,
     hireDate:document.getElementById("stHire").value||todayISO(),
@@ -1002,8 +1367,10 @@ function saveStaff(){
 }
 function deleteStaff(id){
   const s=staffById(id);
-  if(!confirm("Remove "+s.name+" from the staff list?\n\nTheir past shifts and time entries stay, but won't link to a name.")) return;
-  DB.staff=DB.staff.filter(x=>x.id!==id); saveDB(); renderStaff();
+  confirmDialog({title:"Remove "+s.name+"?",message:"Their past shifts and time entries stay, but won't link to a name.",confirmLabel:"Remove staff",danger:true}).then(function(ok){
+    if(!ok) return;
+    DB.staff=DB.staff.filter(x=>x.id!==id); saveDB(); renderStaff();
+  });
 }
 
 /* ---------------- 14. REPORTS ---------------- */
@@ -1046,19 +1413,20 @@ function renderReports(){
   h+= byCat.length? byCat.map(x=>'<div class="bar-row"><div class="bar-lbl">'+esc(x.c)+'</div>'+
       '<div class="bar-track"><div class="bar-fill" style="width:'+Math.max(2,Math.round(x.t/maxCat*100))+'%"></div></div>'+
       '<div class="bar-val">'+money(x.t)+'</div></div>').join("")
-      : '<p class="hint">No expenses in this period.</p>';
+      : emptyInline("trenddown","No expenses in this period.");
   h+='</div>';
   h+='<div class="card"><h3>Sales channels</h3>';
   const ch={dinein:0,takeout:0,delivery:0,catering:0};
   DB.sales.filter(s=>s.date>=repFrom&&s.date<=repTo).forEach(s=>{ch.dinein+=s.dinein;ch.takeout+=s.takeout;ch.delivery+=s.delivery;ch.catering+=s.catering;});
   const maxCh=Math.max(1,ch.dinein,ch.takeout,ch.delivery,ch.catering);
   h+= ["dinein","takeout","delivery","catering"].map(k=>'<div class="bar-row"><div class="bar-lbl">'+k[0].toUpperCase()+k.slice(1)+
-      '</div><div class="bar-track"><div class="bar-fill" style="width:'+Math.max(2,Math.round(ch[k]/maxCh*100))+'%;background:var(--blue)"></div></div>'+
+      '</div><div class="bar-track"><div class="bar-fill" style="width:'+Math.max(2,Math.round(ch[k]/maxCh*100))+'%;background:var(--blue-ink)"></div></div>'+
       '<div class="bar-val">'+money(ch[k])+'</div></div>').join("");
   h+='</div>';
   h+='<div class="disclaimer">'+esc(DISCLAIMER)+'</div>';
   h+='<div class="no-print"><button class="btn btn-blue" onclick="window.print()">'+ic("printer")+' Print report</button></div>';
   document.getElementById("view-reports").innerHTML=h;
+  animateBars(document.getElementById("view-reports"));
 }
 function reportPresetSilent(p){
   const t=todayISO();
@@ -1093,8 +1461,8 @@ function saveSettings(){
   DB.settings.restaurantName=document.getElementById("setName").value.trim();
   DB.settings.province=document.getElementById("setProv").value.trim()||"Ontario";
   const h=num(document.getElementById("setHst").value,0);
-  if(h==null||h>30){ alert("Enter a valid HST rate (0–30)."); return; }
-  DB.settings.hstRate=h; saveDB(); updateHead(); alert("Settings saved.");
+  if(h==null||h>30){ toast("Enter a valid HST rate (0–30).","error"); return; }
+  DB.settings.hstRate=h; saveDB(); updateHead(); toast("Settings saved.","success");
 }
 function exportJSON(){
   const blob=new Blob([JSON.stringify(DB,null,2)],{type:"application/json"});
@@ -1111,21 +1479,27 @@ function importJSON(ev){
     try{
       const d=JSON.parse(r.result);
       if(!d||d.v!==1||!Array.isArray(d.staff)||!Array.isArray(d.shifts)) throw new Error("bad file");
-      if(!confirm("Replace ALL current data with this backup?")) return;
-      DB=Object.assign(blankDB(),d); saveDB(); updateHead(); showTab("home");
-      alert("Backup imported.");
-    }catch(e){ alert("That file doesn't look like a Restaurant Ops Hub backup."); }
+      confirmDialog({title:"Replace all data?",message:"This replaces ALL current data on this device with the backup file.",confirmLabel:"Replace data",danger:true}).then(function(ok){
+        if(!ok) return;
+        DB=Object.assign(blankDB(),d); saveDB(); updateHead(); showTab("home");
+        toast("Backup imported.","success");
+      });
+    }catch(e){ toast("That file doesn't look like a Restaurant Ops Hub backup.","error"); }
   };
   r.readAsText(f); ev.target.value="";
 }
 function eraseAll(){
-  if(!confirm("ERASE EVERYTHING on this device? This cannot be undone.")) return;
-  if(!confirm("Last chance — really delete all data?")) return;
-  localStorage.removeItem(DB_KEY);
-  DB=blankDB(); saveDB();
-  payCtx={staffId:null,periodType:"weekly",periodStart:null,hours:null};
-  repFrom=null; repTo=null; schedOffset=0; shiftDraft=null; staffDraft=null;
-  updateHead(); showTab("settings");
+  confirmDialog({title:"Erase everything?",message:"This deletes ALL data on this device and cannot be undone.",confirmLabel:"Erase everything",cancelLabel:"Keep my data",danger:true}).then(function(ok){
+    if(!ok) return;
+    confirmDialog({title:"Last chance",message:"Really delete all data? This is permanent.",confirmLabel:"Yes, erase it all",cancelLabel:"Cancel",danger:true}).then(function(ok2){
+      if(!ok2) return;
+      localStorage.removeItem(DB_KEY);
+      DB=blankDB(); saveDB();
+      payCtx={staffId:null,periodType:"weekly",periodStart:null,hours:null};
+      repFrom=null; repTo=null; schedOffset=0; shiftDraft=null; staffDraft=null;
+      updateHead(); showTab("settings");
+    });
+  });
 }
 function updateHead(){
   const n=DB.settings.restaurantName;
@@ -1140,7 +1514,7 @@ const RENDER={home:renderHome,schedule:renderSchedule,clock:renderClock,payroll:
 document.addEventListener("DOMContentLoaded",function(){
   loadDB();
   if(!localStorage.getItem(DB_KEY)){ seedSampleData(); } // first run: load sample data
-  buildNav(); updateHead(); showTab("home");
+  buildNav(); updateHead(); initTheme(); showTab("home");
 });
 </script>
 </body>
