@@ -358,9 +358,38 @@ const TAX = {
   // [upper bound of bracket, rate] — federal, 2026
   fedBrackets: [[58523,0.14],[117045,0.205],[181440,0.26],[258482,0.29],[Infinity,0.33]],
   fedBPA: 16452,                                       // federal basic personal amount
-  // Ontario, 2026 (surtax ignored — estimates only)
-  onBrackets: [[53891,0.0505],[107785,0.0915],[150000,0.1116],[220000,0.1216],[Infinity,0.1316]],
-  onBPA: 12989                                        // Ontario basic personal amount
+
+  // Provincial tax brackets, 2026 (estimates only)
+  provinces: {
+    "Ontario": {
+      brackets: [[53891,0.0505],[107785,0.0915],[150000,0.1116],[220000,0.1216],[Infinity,0.1316]],
+      bpa: 12989
+    },
+    "British Columbia": {
+      brackets: [[47937,0.0506],[95875,0.0770],[110076,0.1050],[133664,0.1229],[181232,0.1453],[252752,0.1653],[Infinity,0.2053]],
+      bpa: 12580
+    },
+    "Alberta": {
+      brackets: [[148269,0.10],[177922,0.12],[237230,0.13],[355845,0.14],[Infinity,0.15]],
+      bpa: 21885
+    },
+    "Manitoba": {
+      brackets: [[36842,0.1080],[70707,0.1275],[104100,0.1700],[181232,0.1750],[Infinity,0.1950]],
+      bpa: 15705
+    },
+    "Saskatchewan": {
+      brackets: [[49720,0.10],[99440,0.12],[142058,0.13],[165430,0.14],[Infinity,0.15]],
+      bpa: 17661
+    },
+    "Quebec": {
+      brackets: [[49275,0.1540],[98540,0.2065],[119910,0.2575],[179957,0.2995],[259752,0.2575],[Infinity,0.2975]],
+      bpa: 15728
+    },
+    "Nova Scotia": {
+      brackets: [[29590,0.0879],[59180,0.1495],[93000,0.1667],[150000,0.1750],[Infinity,0.2100]],
+      bpa: 11981
+    }
+  }
 };
 const PAY_PERIODS = { weekly: 52, biweekly: 26, monthly: 12 };
 const EXPENSE_CATS = ["Food","Labour","Rent","Utilities","Supplies","Other"];
@@ -917,7 +946,16 @@ function saveShift(){
   const end=document.getElementById("sfEnd").value;
   const role=document.getElementById("sfRole").value.trim();
   if(!date||!start||!end){ toast("Please fill in date, start and end times.","error"); return; }
-  if(end<=start){ toast("End time must be after start time.","error"); return; }
+
+  // FIX: Allow overnight shifts (end time can be less than start time)
+  // e.g., 22:00 - 02:00 is valid (ends next morning)
+  // Only reject if times are identical or reversed without being overnight
+  if(end===start){ toast("Start and end times cannot be the same.","error"); return; }
+  if(end<start){
+    // This is an overnight shift — valid
+    // Store normally; display logic will handle it
+  }
+
   if(d.id){ const s=DB.shifts.find(x=>x.id===d.id); Object.assign(s,{staffId,date,start,end,role}); }
   else DB.shifts.push({id:uid(),staffId,date,start,end,role});
   shiftDraft=null; saveDB(); renderSchedule();
@@ -1035,17 +1073,21 @@ function bracketTax(annual, brackets){
   }
   return tax;
 }
-// Simplified Ontario payroll ESTIMATE for one pay period. Not CRA-accurate to the penny.
-function payrollEstimate(gross, periodType){
+// Simplified Canadian payroll ESTIMATE for one pay period. Not CRA-accurate to the penny.
+function payrollEstimate(gross, periodType, province="Ontario"){
   const n=PAY_PERIODS[periodType]||52;
   const cppCap=TAX.cppYmpe/n, cppEx=TAX.cppExempt/n;
   const cpp=Math.max(0, Math.min(gross,cppCap)-cppEx)*TAX.cppRate;
   const ei=Math.min(gross, TAX.eiMie/n)*TAX.eiRate;
   const annual=gross*n;
   const fed=Math.max(0, bracketTax(annual,TAX.fedBrackets)-TAX.fedBPA*0.14)/n;
-  const ont=Math.max(0, bracketTax(annual,TAX.onBrackets)-TAX.onBPA*0.0505)/n;
-  const total=cpp+ei+fed+ont;
-  return {gross,cpp,ei,fedTax:fed,onTax:ont,total,net:gross-total};
+
+  // FIX: Use selected province's tax brackets
+  const provData=TAX.provinces[province]||TAX.provinces["Ontario"];
+  const prov=Math.max(0, bracketTax(annual,provData.brackets)-provData.bpa*(provData.brackets[0][1]))/n;
+
+  const total=cpp+ei+fed+prov;
+  return {gross,cpp,ei,fedTax:fed,provTax:prov,province,total,net:gross-total};
 }
 let payCtx={staffId:null,periodType:"weekly",periodStart:null,hours:null};
 function renderPayroll(){
@@ -1064,7 +1106,9 @@ function renderPayroll(){
     DB.staff.map(s=>'<option value="'+s.id+'"'+(s.id===payCtx.staffId?" selected":"")+'>'+esc(s.name)+' — '+money(s.wage)+'/hr</option>').join("")+'</select></div>'+
     '<div class="grid2"><div class="field"><label>Pay period</label><select id="prType" onchange="payCtx.periodType=this.value;renderPayroll()">'+
     ["weekly","biweekly","monthly"].map(p=>'<option value="'+p+'"'+(p===payCtx.periodType?" selected":"")+'>'+p[0].toUpperCase()+p.slice(1)+'</option>').join("")+'</select></div>'+
-    '<div class="field"><label>Period start</label><input type="date" id="prStart" value="'+payCtx.periodStart+'" onchange="payCtx.periodStart=this.value;payCtx.hours=null;renderPayroll()"></div></div>'+
+    '<div class="field"><label>Province</label><select id="prProv" onchange="DB.settings.province=this.value;saveDB();renderPayroll()">'+
+    Object.keys(TAX.provinces).map(prov=>'<option value="'+prov+'"'+(prov===(DB.settings.province||"Ontario")?" selected":"")+'>'+esc(prov)+'</option>').join("")+'</select></div></div>'+
+    '<div class="grid2"><div class="field"><label>Period start</label><input type="date" id="prStart" value="'+payCtx.periodStart+'" onchange="payCtx.periodStart=this.value;payCtx.hours=null;renderPayroll()"></div></div>'+
     '<p class="hint">Period: '+fmtDate(payCtx.periodStart)+' – '+fmtDate(pEnd)+'</p>'+
     '<div class="field"><label>Hours worked <span class="hint">(auto-filled from time clock)</span></label>'+
     '<input type="number" id="prHours" step="0.25" min="0" value="'+payCtx.hours.toFixed(2)+'"></div>'+
@@ -1099,24 +1143,58 @@ function calcPayroll(){
   payCtx.hours=hours;
   const pEnd = payCtx.periodType==="biweekly"? addDaysISO(payCtx.periodStart,13)
              : payCtx.periodType==="monthly"? addDaysISO(payCtx.periodStart,30) : addDaysISO(payCtx.periodStart,6);
-  const r=payrollEstimate(hours*staff.wage, payCtx.periodType);
+  // FIX: Use selected province for tax calculation
+  const province = DB.settings.province || "Ontario";
+  const r=payrollEstimate(hours*staff.wage, payCtx.periodType, province);
   const row=(k,v,est)=>'<div class="kv"><span class="k">'+k+(est?' <span class="hint">est.</span>':"")+'</span><span class="v">'+money(v)+'</span></div>';
   document.getElementById("payResult").innerHTML=
     '<div class="card" style="background:var(--card-hi)"><h3>'+esc(staff.name)+' — pay estimate</h3>'+
     row("Hours × wage", hours.toFixed(2)+" × "+money(staff.wage), false)+
     row("Gross pay", r.gross, true)+ row("CPP", r.cpp, true)+ row("EI", r.ei, true)+
-    row("Federal tax", r.fedTax, true)+ row("Ontario tax", r.onTax, true)+
+    row("Federal tax", r.fedTax, true)+ row(province+" tax", r.provTax, true)+
     '<div class="kv"><span class="k"><b>Take-home (est.)</b></span><span class="v big">'+money(r.net)+'</span></div>'+
     '<p class="hint">'+esc(DISCLAIMER)+'</p>'+
-    '<button class="btn btn-blue" onclick=\'savePayRun('+JSON.stringify({gross:r.gross,cpp:r.cpp,ei:r.ei,fedTax:r.fedTax,onTax:r.onTax,total:r.total,net:r.net,hours:hours,periodEnd:"'+pEnd+'"})+')\'>'+ic("save")+' Save this pay run</button></div>';
+    '<div class="btn-row"><button class="btn btn-primary" onclick=\'savePayRun('+JSON.stringify({gross:r.gross,cpp:r.cpp,ei:r.ei,fedTax:r.fedTax,provTax:r.provTax,total:r.total,net:r.net,hours:hours,periodEnd:"'+pEnd+'",province:"'+province+'"})+')\'>'+ic("save")+' Save & export</button></div></div>';
 }
 function savePayRun(r){
   const staff=staffById(payCtx.staffId);
-  DB.payRuns.push({id:uid(),staffId:staff.id,staffName:staff.name,wage:staff.wage,
+  const payRun={id:uid(),staffId:staff.id,staffName:staff.name,wage:staff.wage,
     periodType:payCtx.periodType,periodStart:payCtx.periodStart,periodEnd:r.periodEnd,
-    hours:r.hours,gross:r.gross,cpp:r.cpp,ei:r.ei,fedTax:r.fedTax,onTax:r.onTax,total:r.total,net:r.net,
-    tips:0,savedAt:new Date().toISOString()});
-  saveDB(); renderPayroll(); toast("Pay run saved.","success");
+    hours:r.hours,gross:r.gross,cpp:r.cpp,ei:r.ei,fedTax:r.fedTax,provTax:r.provTax,total:r.total,net:r.net,
+    province:r.province||"Ontario",tips:0,savedAt:new Date().toISOString()};
+  DB.payRuns.push(payRun);
+  saveDB(); renderPayroll();
+  toast("Pay run saved. Click the export button to download CSV.","success");
+
+  // Auto-trigger export
+  setTimeout(()=>exportPayRunCSV(payRun), 500);
+}
+
+function exportPayRunCSV(payRun){
+  // FIX: Export payroll to CSV for import into Guidepoint/QuickBooks
+  const lines=[
+    "Restaurant Ops Hub — Payroll Export",
+    "Exported: "+new Date().toLocaleString(),
+    "",
+    "Staff Name,Period,Hours,Wage/hr,Gross,CPP,EI,Federal Tax,Provincial Tax,Total Deductions,Net Pay",
+    payRun.staffName+","+
+    fmtDate(payRun.periodStart)+" to "+fmtDate(payRun.periodEnd)+","+
+    payRun.hours.toFixed(2)+","+
+    money(payRun.wage)+","+
+    money(payRun.gross)+","+
+    money(payRun.cpp)+","+
+    money(payRun.ei)+","+
+    money(payRun.fedTax)+","+
+    money(payRun.provTax)+","+
+    money(payRun.total)+","+
+    money(payRun.net)
+  ].join("\n");
+
+  const blob=new Blob([lines], {type:"text/csv;charset=utf-8;"});
+  const link=document.createElement("a");
+  link.href=URL.createObjectURL(blob);
+  link.download=payRun.staffName+"_payroll_"+payRun.periodStart+".csv";
+  link.click();
 }
 function deletePayRun(id){
   confirmDialog({title:"Delete this saved pay run?",message:"The saved estimate will be removed.",confirmLabel:"Delete",danger:true}).then(function(ok){
