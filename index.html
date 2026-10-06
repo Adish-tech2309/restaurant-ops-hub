@@ -1683,6 +1683,64 @@ function reportPresetSilent(p){
 }
 
 /* ---------------- 15. SETTINGS ---------------- */
+/* POS Connection Functions */
+function selectPOS(type){
+  if(!type){return;}
+  const setup=document.getElementById("posSetup");
+  if(type==="csv"){
+    setup.innerHTML='<div class="field"><label>Upload employee list</label><input type="file" id="csvUpload" accept=".csv" onchange="uploadCSV(event)"><p class="hint">CSV format: name, role, phone, wage, hireDate, notes</p></div>';
+  } else if(type==="cluster"){
+    setup.innerHTML='<div class="field"><label>Cluster API Key</label><input id="clusterKey" type="password" placeholder="Enter your Cluster API key"></div>'+
+      '<div class="field"><label>Restaurant ID</label><input id="clusterId" placeholder="Enter your restaurant ID"></div>'+
+      '<button class="btn btn-primary" onclick="connectCluster()">Connect to Cluster</button>';
+  }
+}
+async function uploadCSV(ev){
+  const f=ev.target.files[0]; if(!f) return;
+  try{
+    toast("Uploading...","");
+    const adapter=POSManager.setCurrentAdapter("csv");
+    await adapter.uploadStaffFile(f);
+    await POSManager.syncData();
+    renderSettings();
+  } catch(e){
+    toast("Upload failed: "+e.message,"error");
+  }
+}
+async function connectCluster(){
+  const key=document.getElementById("clusterKey").value.trim();
+  const id=document.getElementById("clusterId").value.trim();
+  if(!key||!id){toast("Enter API key and restaurant ID","error");return;}
+  try{
+    toast("Connecting...","");
+    const adapter=POSManager.setCurrentAdapter("cluster");
+    await adapter.connect(key,id);
+    await POSManager.syncData();
+    renderSettings();
+  } catch(e){
+    toast("Connection failed: "+e.message,"error");
+  }
+}
+async function syncPOSData(){
+  try{
+    toast("Syncing...","");
+    const result=await POSManager.syncData();
+    toast(`Synced: ${result.staff} staff, ${result.shifts} shifts, ${result.sales} sales records`,"success");
+    loadDB();
+    renderHome();
+  } catch(e){
+    toast("Sync failed: "+e.message,"error");
+  }
+}
+async function disconnectPOS(){
+  confirmDialog({title:"Disconnect POS?",message:"Your local data stays on this device. You can reconnect anytime.",confirmLabel:"Disconnect",cancelLabel:"Keep connected"}).then(async function(ok){
+    if(!ok) return;
+    await POSManager.disconnect();
+    toast("POS disconnected","success");
+    renderSettings();
+  });
+}
+
 function renderSettings(){
   const s=DB.settings;
   let h='<div class="card"><h3>Restaurant details</h3>'+
@@ -1690,6 +1748,25 @@ function renderSettings(){
     '<div class="grid2"><div class="field"><label>Province</label><input id="setProv" value="'+esc(s.province)+'"></div>'+
     '<div class="field"><label>HST/GST rate (%)</label><input id="setHst" type="number" step="0.1" min="0" max="30" value="'+esc(s.hstRate)+'"></div></div>'+
     '<button class="btn btn-primary" onclick="saveSettings()">Save settings</button></div>';
+  h+='<div class="card"><h3>'+ic("link")+' POS Connection</h3>';
+  (async function renderPOS(){
+    const connected=await POSManager.isConnected();
+    const adapter=POSManager.getCurrentAdapter();
+    if(connected && adapter){
+      h+='<div class="kv" style="padding:8px;background:var(--accent-soft);border-radius:8px;border:1px solid var(--accent-ink)"><span class="k">'+ic("checkmark")+' Connected</span><span class="v">'+esc(adapter.name)+'</span></div>';
+      h+='<p class="hint">Your POS data is ready to sync.</p>';
+      h+='<div class="btn-row"><button class="btn btn-blue" onclick="syncPOSData()">'+ic("sync")+' Sync data now</button>';
+      h+='<button class="btn btn-ghost" onclick="disconnectPOS()">'+ic("unlink")+' Disconnect</button></div>';
+    } else {
+      h+='<p class="hint">Connect your POS to auto-sync staff, shifts, and sales data.</p>';
+      h+='<div class="field"><label>Select your POS</label><select id="posSelect" onchange="selectPOS(this.value)">';
+      h+='<option value="">Choose your POS...</option>';
+      POSManager.getAvailableAdapters().forEach(a=>{h+='<option value="'+a.type+'">'+esc(a.name)+' — '+esc(a.description)+'</option>';});
+      h+='</select></div>';
+      h+='<div id="posSetup"></div>';
+    }
+    h+='</div>';
+  })();
   h+='<div class="card"><h3>'+ic("save")+' Backup</h3>'+
     '<p class="hint">Your data stays on this device only. Export backups regularly.</p>'+
     '<div class="btn-row"><button class="btn btn-blue" onclick="exportJSON()">'+ic("download")+' Export backup</button>'+
@@ -1755,6 +1832,55 @@ function updateHead(){
   document.getElementById("headName").innerHTML='<span class="brand-mark" aria-hidden="true">'+ICONS.utensils+'</span><span>'+esc(n||"Restaurant Ops Hub")+'</span>';
   document.getElementById("headDate").textContent=new Date().toLocaleDateString("en-CA",{weekday:"long",month:"long",day:"numeric",year:"numeric"});
 }
+
+/* ================== 15. POS ADAPTER SYSTEM ================== */
+class POSAdapter{
+  constructor(config={}){this.config=config;this.name='Base Adapter';this.type='unknown';}
+  async connect(){throw new Error('connect() must be implemented');}
+  async isConnected(){throw new Error('isConnected() must be implemented');}
+  async disconnect(){throw new Error('disconnect() must be implemented');}
+  async getStaff(){throw new Error('getStaff() must be implemented');}
+  async getShifts(){throw new Error('getShifts() must be implemented');}
+  async getSales(f,t){throw new Error('getSales() must be implemented');}
+  saveConfig(){localStorage.setItem('pos-config',JSON.stringify({type:this.type,connectedAt:new Date().toISOString(),config:this.config}));}
+  static loadConfig(){const s=localStorage.getItem('pos-config');return s?JSON.parse(s):null;}
+  static clearConfig(){localStorage.removeItem('pos-config');}
+}
+
+class CSVAdapter extends POSAdapter{
+  constructor(){super();this.name='CSV Import';this.type='csv';this.data={staff:[],shifts:[],sales:[]};}
+  async connect(){return true;}
+  async isConnected(){return this.data.staff.length>0;}
+  async disconnect(){this.data={staff:[],shifts:[],sales:[]};POSAdapter.clearConfig();}
+  parseStaffCSV(t){const l=t.trim().split('\n'),h=l[0].split(',').map(x=>x.trim().toLowerCase()),s=[];for(let i=1;i<l.length;i++){if(!l[i].trim())continue;const v=l[i].split(',').map(x=>x.trim()),r={};h.forEach((x,j)=>{r[x]=v[j]||''});if(r.name)s.push({id:uid(),name:r.name,role:r.role||'Staff',phone:r.phone||'',wage:parseFloat(r.wage)||0,hireDate:r.hiredate||todayISO(),notes:r.notes||''});}this.data.staff=s;this.saveConfig();return s;}
+  async uploadStaffFile(f){return new Promise((res,rej)=>{const rd=new FileReader();rd.onload=(e)=>{try{res(this.parseStaffCSV(e.target.result));}catch(er){rej(er);}};rd.onerror=()=>rej(new Error('File read failed'));rd.readAsText(f);});}
+  async getStaff(){return this.data.staff;}
+  async getShifts(){return this.data.shifts||[];}
+  async getSales(){return this.data.sales||[];}
+}
+
+class ClusterAdapter extends POSAdapter{
+  constructor(){super();this.name='Cluster POS';this.type='cluster';this.apiBase='https://api.clusterpos.com';this.apiKey=null;this.restaurantId=null;}
+  async connect(k,r){if(!k||!r)throw new Error('API key and restaurant ID required');this.apiKey=k;this.restaurantId=r;this.config={apiKey:k,restaurantId:r};this.saveConfig();return true;}
+  async isConnected(){return!!this.apiKey;}
+  async disconnect(){this.apiKey=null;this.restaurantId=null;this.config={};POSAdapter.clearConfig();}
+  async callAPI(e,m='GET',d=null){const o={method:m,headers:{'Authorization':`Bearer ${this.apiKey}`,'Content-Type':'application/json'}};if(d)o.body=JSON.stringify(d);const r=await fetch(`${this.apiBase}${e}`,o);if(!r.ok)throw new Error(`Cluster API error: ${r.status}`);return r.json();}
+  async getStaff(){try{const d=await this.callAPI(`/restaurants/${this.restaurantId}/employees`);return(d.employees||[]).map(e=>({id:e.id||uid(),name:e.name||e.firstName+' '+e.lastName,role:e.position||e.role||'Staff',phone:e.phone||e.phoneNumber||'',wage:parseFloat(e.hourlyRate||e.wage)||0,hireDate:e.hireDate||e.startDate||todayISO(),notes:e.notes||e.specialNotes||''}));}catch(e){console.error('Cluster staff error:',e);return[];}}
+  async getShifts(){try{const d=await this.callAPI(`/restaurants/${this.restaurantId}/shifts`);return(d.shifts||[]).map(s=>({id:s.id||uid(),staffId:s.employeeId||s.staffId,date:s.date||s.shiftDate,start:s.startTime||s.start,end:s.endTime||s.end}));}catch(e){console.error('Cluster shifts error:',e);return[];}}
+  async getSales(f,t){try{const d=await this.callAPI(`/restaurants/${this.restaurantId}/sales?from=${f}&to=${t}`);return(d.sales||[]).map(s=>({id:s.id||uid(),date:s.date||s.saleDate,dinein:parseFloat(s.dineIn||s.dinein||0),takeout:parseFloat(s.takeOut||s.takeout||0),delivery:parseFloat(s.delivery||0),catering:parseFloat(s.catering||0)}));}catch(e){console.error('Cluster sales error:',e);return[];}}
+}
+
+class POSAdapterManager{
+  constructor(){this.currentAdapter=null;this.adapters={csv:()=>new CSVAdapter(),cluster:()=>new ClusterAdapter()};}
+  getAvailableAdapters(){return[{type:'csv',name:'CSV Import',description:'Upload data from any POS as CSV files',icon:'upload',setup:'Upload your employee list'},{type:'cluster',name:'Cluster POS',description:'Direct connection to Cluster (Montreal)',icon:'link',setup:'Connect with your API key'}];}
+  getAdapter(t){if(!this.adapters[t])throw new Error(`Unknown adapter: ${t}`);return this.adapters[t]();}
+  setCurrentAdapter(t){this.currentAdapter=this.getAdapter(t);return this.currentAdapter;}
+  getCurrentAdapter(){if(!this.currentAdapter){const c=POSAdapter.loadConfig();if(c&&c.type)this.currentAdapter=this.getAdapter(c.type);}return this.currentAdapter;}
+  async isConnected(){const a=this.getCurrentAdapter();return a?await a.isConnected():false;}
+  async syncData(){const a=this.getCurrentAdapter();if(!a)throw new Error('No POS connected');try{const st=await a.getStaff(),sh=await a.getShifts(),sa=await a.getSales(addDaysISO(todayISO(),-30),todayISO());if(st.length>0)DB.staff=st;if(sh.length>0)DB.shifts=sh;if(sa.length>0)DB.sales=sa;saveDB();toast(`Synced: ${st.length} staff, ${sh.length} shifts`,`success`);return{staff:st.length,shifts:sh.length,sales:sa.length};}catch(e){console.error('Sync failed:',e);toast('Sync failed: '+e.message,'error');throw e;}}
+  async disconnect(){if(this.currentAdapter){await this.currentAdapter.disconnect();this.currentAdapter=null;}}
+}
+const POSManager=new POSAdapterManager();
 
 /* ---------------- 16. INIT ---------------- */
 const RENDER={home:renderHome,schedule:renderSchedule,clock:renderClock,myhours:renderMyHours,payroll:renderPayroll,
