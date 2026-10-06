@@ -1093,6 +1093,10 @@ function payrollEstimate(gross, periodType, province="Ontario"){
 
 /* ---------- 3B. MY HOURS (Employee View) ---------- */
 let myHoursStaffId=null;
+function selectMyHoursStaff(id){
+  myHoursStaffId=id;
+  renderMyHours();
+}
 function renderMyHours(){
   if(!DB.staff.length){ document.getElementById("view-myhours").innerHTML=emptyState("users","No staff","Add staff members to view hours."); return; }
   if(!myHoursStaffId) myHoursStaffId=DB.staff[0].id;
@@ -1125,7 +1129,7 @@ function renderMyHours(){
     .sort((a,b)=>b.in.localeCompare(a.in));
 
   let h='<div class="card"><h3>Select staff member</h3>'+
-    '<div class="field"><select id="myHoursSelect" onchange="myHoursStaffId=this.value;renderMyHours()">'+
+    '<div class="field"><select id="myHoursSelect" onchange="selectMyHoursStaff(this.value)">'+
     DB.staff.map(st=>'<option value="'+st.id+'"'+(st.id===myHoursStaffId?' selected':'')+'}>'+esc(st.name)+' ('+esc(st.role||'Staff')+')</option>').join('')+
     '</select></div></div>';
 
