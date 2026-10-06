@@ -1852,7 +1852,27 @@ class CSVAdapter extends POSAdapter{
   async connect(){return true;}
   async isConnected(){return this.data.staff.length>0;}
   async disconnect(){this.data={staff:[],shifts:[],sales:[]};POSAdapter.clearConfig();}
-  parseStaffCSV(t){const l=t.trim().split('\n'),h=l[0].split(',').map(x=>x.trim().toLowerCase()),s=[];for(let i=1;i<l.length;i++){if(!l[i].trim())continue;const v=l[i].split(',').map(x=>x.trim()),r={};h.forEach((x,j)=>{r[x]=v[j]||''});if(r.name)s.push({id:uid(),name:r.name,role:r.role||'Staff',phone:r.phone||'',wage:parseFloat(r.wage)||0,hireDate:r.hiredate||todayISO(),notes:r.notes||''});}this.data.staff=s;this.saveConfig();return s;}
+  parseStaffCSV(t){
+    const l=t.trim().split('\n');
+    if(l.length<2)throw new Error('CSV file is empty or has no data rows');
+    const h=l[0].split(',').map(x=>x.trim().toLowerCase());
+    if(!h.includes('name')||!h.includes('wage'))throw new Error('CSV must have "name" and "wage" columns');
+    const s=[];
+    for(let i=1;i<l.length;i++){
+      if(!l[i].trim())continue;
+      const v=l[i].split(',').map(x=>x.trim()),r={};
+      h.forEach((x,j)=>{r[x]=v[j]||''});
+      if(!r.name){console.warn('Row '+(i+1)+': skipped (no name)');continue;}
+      const w=parseFloat(r.wage);
+      if(isNaN(w)||w<0)throw new Error('Row '+(i+1)+': wage must be a positive number');
+      s.push({id:uid(),name:r.name,role:r.role||'Staff',phone:r.phone||'',wage:w,hireDate:r.hiredate||todayISO(),notes:r.notes||''});
+    }
+    if(s.length===0)throw new Error('No valid staff records found in CSV');
+    this.data.staff=s;
+    this.saveConfig();
+    console.log('CSV parsed successfully: '+s.length+' staff members');
+    return s;
+  }
   async uploadStaffFile(f){return new Promise((res,rej)=>{const rd=new FileReader();rd.onload=(e)=>{try{res(this.parseStaffCSV(e.target.result));}catch(er){rej(er);}};rd.onerror=()=>rej(new Error('File read failed'));rd.readAsText(f);});}
   async getStaff(){return this.data.staff;}
   async getShifts(){return this.data.shifts||[];}
