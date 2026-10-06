@@ -327,6 +327,7 @@ input[type=checkbox]:focus-visible,input[type=radio]:focus-visible{outline:2px s
   <section class="tab" id="tab-home"><h2>Home</h2><div id="view-home"></div></section>
   <section class="tab" id="tab-schedule"><h2>Schedule</h2><div id="view-schedule"></div></section>
   <section class="tab" id="tab-clock"><h2>Time Clock</h2><div id="view-clock"></div></section>
+  <section class="tab" id="tab-myhours"><h2>My Hours</h2><div id="view-myhours"></div></section>
   <section class="tab" id="tab-payroll"><h2>Payroll</h2><div id="view-payroll"></div></section>
   <section class="tab" id="tab-moneyin"><h2>Money In</h2><div id="view-moneyin"></div></section>
   <section class="tab" id="tab-moneyout"><h2>Money Out</h2><div id="view-moneyout"></div></section>
@@ -806,7 +807,7 @@ function clearSampleData(){
 /* ---------------- 5. NAVIGATION ---------------- */
 const TABS=[
   ["home","home","Home"],["schedule","calendar","Schedule"],["clock","clock","Clock"],
-  ["payroll","banknote","Payroll"],["moneyin","trendup","Money In"],["moneyout","trenddown","Money Out"],
+  ["myhours","userclock","My Hours"],["payroll","banknote","Payroll"],["moneyin","trendup","Money In"],["moneyout","trenddown","Money Out"],
   ["tasks","checksq","Tasks"],["staff","users","Staff"],["reports","barchart","Reports"],["settings","settings","Settings"]
 ];
 let currentTab="home";
@@ -1089,6 +1090,98 @@ function payrollEstimate(gross, periodType, province="Ontario"){
   const total=cpp+ei+fed+prov;
   return {gross,cpp,ei,fedTax:fed,provTax:prov,province,total,net:gross-total};
 }
+
+/* ---------- 3B. MY HOURS (Employee View) ---------- */
+let myHoursStaffId=null;
+function renderMyHours(){
+  if(!DB.staff.length){ document.getElementById("view-myhours").innerHTML=emptyState("users","No staff","Add staff members to view hours."); return; }
+  if(!myHoursStaffId) myHoursStaffId=DB.staff[0].id;
+  const staff=staffById(myHoursStaffId);
+  if(!staff) myHoursStaffId=DB.staff[0].id;
+  const s=staffById(myHoursStaffId);
+  const t=todayISO(), [w0,w1]=weekRange(t);
+  const ytdStart=t.slice(0,4)+"-01-01";
+
+  // Calculate hours for this week and YTD
+  const weekHours=hoursInRange(w0,w1)[s.id]||0;
+  const ytdHours=hoursInRange(ytdStart,t)[s.id]||0;
+  const weekEarn=weekHours*s.wage;
+  const ytdEarn=ytdHours*s.wage;
+
+  // Scheduled shifts this week
+  const weekShifts=DB.shifts.filter(sh=>sh.staffId===s.id && sh.date>=w0 && sh.date<=w1)
+    .sort((a,b)=>a.date.localeCompare(b.date)||a.start.localeCompare(b.start));
+  const scheduledHours=weekShifts.reduce((n,sh)=>{
+    const [sh0,sh1]=[sh.start,sh.end];
+    const h0=parseInt(sh0.slice(0,2)),m0=parseInt(sh0.slice(3,5));
+    const h1=parseInt(sh1.slice(0,2)),m1=parseInt(sh1.slice(3,5));
+    let diff=h1*60+m1-(h0*60+m0);
+    if(diff<0) diff+=24*60; // handle midnight wrap
+    return n+diff/60;
+  },0);
+
+  // Clock entries this week
+  const weekClocks=DB.clock.filter(c=>c.staffId===s.id&&c.in.slice(0,10)>=w0&&c.in.slice(0,10)<=w1&&c.out)
+    .sort((a,b)=>b.in.localeCompare(a.in));
+
+  let h='<div class="card"><h3>Select staff member</h3>'+
+    '<div class="field"><select id="myHoursSelect" onchange="myHoursStaffId=this.value;renderMyHours()">'+
+    DB.staff.map(st=>'<option value="'+st.id+'"'+(st.id===myHoursStaffId?' selected':'')+'}>'+esc(st.name)+' ('+esc(st.role||'Staff')+')</option>').join('')+
+    '</select></div></div>';
+
+  h+='<div class="card"><h3>'+esc(s.name)+' — '+esc(s.role||'Staff')+'</h3>'+
+    '<div class="kv"><span class="k">Hourly wage</span><span class="v">'+money(s.wage)+'/hr</span></div>'+
+    '<div class="kv"><span class="k">Hired</span><span class="v">'+(s.hireDate?fmtDate(s.hireDate):"—")+'</span></div>'+
+    (s.notes?'<p class="hint" style="margin:10px 0 0">'+ic("filetext")+' '+esc(s.notes)+'</p>':'')+'</div>';
+
+  h+='<div class="card"><h3>'+ic("calendar")+' This week ('+fmtDate(w0)+' to '+fmtDate(w1)+')</h3>'+
+    '<div class="stat-grid">'+
+    '<div class="stat"><div class="lbl">'+ic("clock")+' Scheduled</div><div class="num">'+scheduledHours.toFixed(1)+'</div><div class="det">hours</div></div>'+
+    '<div class="stat"><div class="lbl">'+ic("checkmark")+' Clocked</div><div class="num">'+weekHours.toFixed(1)+'</div><div class="det">hours</div></div>'+
+    '<div class="stat"><div class="lbl">'+ic("dollar")+' Earned</div><div class="num">'+money(weekEarn)+'</div><div class="det">gross</div></div>'+
+    '<div class="stat"><div class="lbl">'+ic("minus")+' Diff</div><div class="num">'+(weekHours-scheduledHours).toFixed(1)+'</div><div class="det">hours</div></div>'+
+    '</div></div>';
+
+  // Shifts this week
+  h+='<div class="card"><h3>'+ic("calendar")+' Scheduled shifts this week</h3>';
+  if(weekShifts.length){
+    h+=weekShifts.map(sh=>{
+      const d=parseISO(sh.date);
+      const dow=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][d.getDay()];
+      const hrs=(parseInt(sh.end.slice(0,2))*60+parseInt(sh.end.slice(3,5))-(parseInt(sh.start.slice(0,2))*60+parseInt(sh.start.slice(3,5)))+(sh.end<sh.start?24*60:0))/60;
+      return '<div class="kv"><span class="k">'+dow+' '+fmtDate(sh.date)+'</span><span class="v">'+sh.start+' – '+sh.end+' <span class="pill">'+ hrs.toFixed(1)+'h</span></span></div>';
+    }).join('');
+  } else {
+    h+='<p class="hint">No shifts scheduled this week</p>';
+  }
+  h+='</div>';
+
+  // Clock entries this week
+  h+='<div class="card"><h3>'+ic("checkmark")+' Clock entries this week</h3>';
+  if(weekClocks.length){
+    h+=weekClocks.map(c=>{
+      const inTime=c.in.slice(11,16);
+      const outTime=c.out.slice(11,16);
+      const hrs=hoursBetween(c.in,c.out);
+      const d=parseISO(c.in.slice(0,10));
+      const dow=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][d.getDay()];
+      return '<div class="kv"><span class="k">'+dow+' '+fmtDate(c.in.slice(0,10))+'</span><span class="v">'+inTime+' – '+outTime+' <span class="pill">'+hrs.toFixed(2)+'h</span></span></div>';
+    }).join('');
+  } else {
+    h+='<p class="hint">No clock entries this week</p>';
+  }
+  h+='</div>';
+
+  // YTD summary
+  h+='<div class="card"><h3>'+ic("trendup")+' Year-to-date summary</h3>'+
+    '<div class="kv"><span class="k">Total hours</span><span class="v big">'+ytdHours.toFixed(1)+'h</span></div>'+
+    '<div class="kv"><span class="k">Gross earnings</span><span class="v big">'+money(ytdEarn)+'</span></div>'+
+    '<div class="kv"><span class="k">From</span><span class="v">'+ytdStart+'</span></div>'+
+    '</div>';
+
+  document.getElementById("view-myhours").innerHTML=h;
+}
+
 let payCtx={staffId:null,periodType:"weekly",periodStart:null,hours:null};
 function renderPayroll(){
   if(!payCtx.periodStart) payCtx.periodStart=mondayISO(todayISO());
@@ -1660,7 +1753,7 @@ function updateHead(){
 }
 
 /* ---------------- 16. INIT ---------------- */
-const RENDER={home:renderHome,schedule:renderSchedule,clock:renderClock,payroll:renderPayroll,
+const RENDER={home:renderHome,schedule:renderSchedule,clock:renderClock,myhours:renderMyHours,payroll:renderPayroll,
   moneyin:renderMoneyIn,moneyout:renderMoneyOut,tasks:renderTasks,staff:renderStaff,
   reports:renderReports,settings:renderSettings};
 document.addEventListener("DOMContentLoaded",function(){
