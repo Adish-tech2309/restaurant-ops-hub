@@ -333,6 +333,8 @@ input[type=checkbox]:focus-visible,input[type=radio]:focus-visible{outline:2px s
   <section class="tab" id="tab-moneyout"><h2>Money Out</h2><div id="view-moneyout"></div></section>
   <section class="tab" id="tab-tasks"><h2>Tasks</h2><div id="view-tasks"></div></section>
   <section class="tab" id="tab-staff"><h2>Staff</h2><div id="view-staff"></div></section>
+  <section class="tab" id="tab-inventory"><h2>Inventory</h2><div id="view-inventory"></div></section>
+  <section class="tab" id="tab-forecasting"><h2>Forecasting</h2><div id="view-forecasting"></div></section>
   <section class="tab" id="tab-reports"><h2>Reports</h2><div id="view-reports"></div></section>
   <section class="tab" id="tab-settings"><h2>Settings</h2><div id="view-settings"></div></section>
 </main>
@@ -667,7 +669,8 @@ function blankDB(){
   return { v:1, seeded:false, seedIds:[],
     settings:{ restaurantName:"", province:"Ontario", hstRate:13 },
     staff:[], shifts:[], clock:[], payRuns:[],
-    sales:[], invoices:[], expenses:[], bills:[], checklists:[] };
+    sales:[], invoices:[], expenses:[], bills:[], checklists:[],
+    inventory:[], forecastData:[] };
 }
 let DB = blankDB();
 function loadDB(){
@@ -808,7 +811,8 @@ function clearSampleData(){
 const TABS=[
   ["home","home","Home"],["schedule","calendar","Schedule"],["clock","clock","Clock"],
   ["myhours","userclock","My Hours"],["payroll","banknote","Payroll"],["moneyin","trendup","Money In"],["moneyout","trenddown","Money Out"],
-  ["tasks","checksq","Tasks"],["staff","users","Staff"],["reports","barchart","Reports"],["settings","settings","Settings"]
+  ["tasks","checksq","Tasks"],["staff","users","Staff"],["inventory","sprout","Inventory"],["forecasting","trendup","Forecasting"],
+  ["reports","barchart","Reports"],["settings","settings","Settings"]
 ];
 let currentTab="home";
 function buildNav(){
@@ -1622,7 +1626,171 @@ function deleteStaff(id){
   });
 }
 
-/* ---------------- 14. REPORTS ---------------- */
+/* ============ 13a. INVENTORY MANAGEMENT ============ */
+let inventoryDraft=null;
+function renderInventory(){
+  let h="";
+  if(inventoryDraft){
+    const d=inventoryDraft, isNew=!d.id;
+    h+='<div class="card no-print"><h3>'+(isNew?"Add inventory item":"Edit item")+'</h3>'+
+      '<div class="grid2"><div class="field"><label>Item name</label><input id="invName" value="'+esc(d.name||"")+'"></div>'+
+      '<div class="field"><label>Category</label><input id="invCat" value="'+esc(d.category||"")+'" placeholder="Produce, Proteins, etc"></div></div>'+
+      '<div class="grid2"><div class="field"><label>Unit</label><input id="invUnit" value="'+esc(d.unit||"")+'" placeholder="lbs, cases, pieces"></div>'+
+      '<div class="field"><label>Cost per unit ($)</label><input id="invCost" type="number" step="0.01" min="0" value="'+(d.cost!=null?d.cost:"")+'"></div></div>'+
+      '<div class="grid2"><div class="field"><label>Current qty</label><input id="invQty" type="number" step="0.1" min="0" value="'+(d.quantity!=null?d.quantity:"0")+'"></div>'+
+      '<div class="field"><label>Par level (min)</label><input id="invPar" type="number" step="0.1" min="0" value="'+(d.parLevel!=null?d.parLevel:"")+'"></div></div>'+
+      '<div class="field"><label>Supplier</label><input id="invSupp" value="'+esc(d.supplier||"")+'" placeholder="e.g. Sysco, Produce market"></div>'+
+      '<div class="field"><label>Notes</label><textarea id="invNotes" placeholder="Reorder window, lead time, etc">'+esc(d.notes||"")+'</textarea></div>'+
+      '<div class="btn-row"><button class="btn btn-primary" onclick="saveInventoryItem()">Save</button>'+
+      '<button class="btn btn-ghost" onclick="inventoryDraft=null;renderInventory()">Cancel</button></div></div>';
+  } else {
+    h+='<div class="card no-print"><button class="btn btn-primary" onclick="inventoryDraft={};renderInventory()">'+ic("plus")+' Add item</button></div>';
+  }
+
+  if(DB.inventory.length>0){
+    const grouped={};
+    DB.inventory.forEach(item=>{
+      const cat=item.category||"Uncategorized";
+      if(!grouped[cat]) grouped[cat]=[];
+      grouped[cat].push(item);
+    });
+
+    Object.keys(grouped).sort().forEach(cat=>{
+      h+='<div class="card"><h3>'+esc(cat)+'</h3>';
+      grouped[cat].forEach(item=>{
+        const lowStock=item.quantity<(item.parLevel||0);
+        const totalCost=(item.quantity||0)*(item.cost||0);
+        h+='<div style="padding:10px 0;border-top:1px solid var(--line-soft);" class="'+(lowStock?"":"")+'">'+
+          '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">'+
+          '<strong>'+esc(item.name)+'</strong>'+
+          (lowStock?'<span class="pill" style="background:var(--amber-soft);color:var(--amber-text);">'+ic("alert")+' Low Stock</span>':'')+
+          '</div>'+
+          '<div class="kv"><span class="k">Current</span><span class="v">'+num(item.quantity,1)+' '+esc(item.unit||"units")+'</span></div>'+
+          '<div class="kv"><span class="k">Par level</span><span class="v">'+num(item.parLevel,1)+' '+esc(item.unit||"units")+'</span></div>'+
+          '<div class="kv"><span class="k">Cost per unit</span><span class="v">'+money(item.cost||0)+'</span></div>'+
+          '<div class="kv"><span class="k">Inventory value</span><span class="v">'+money(totalCost)+'</span></div>'+
+          (item.supplier?'<div class="kv"><span class="k">Supplier</span><span class="v">'+esc(item.supplier)+'</span></div>':'')+
+          (item.notes?'<p class="hint">'+esc(item.notes)+'</p>':'')+
+          '<div class="btn-row no-print"><button class="btn btn-ghost" onclick=\'inventoryDraft='+attrJSON({id:item.id,name:item.name,category:item.category,unit:item.unit,quantity:item.quantity,cost:item.cost,parLevel:item.parLevel,supplier:item.supplier,notes:item.notes})+';renderInventory()\'>'+ic("pencil")+' Edit</button>'+
+          '<button class="btn btn-danger" onclick="deleteInventoryItem(\''+item.id+'\')">'+ic("trash")+' Remove</button></div>'+
+          '</div>';
+      });
+      h+='</div>';
+    });
+
+    const totalValue=DB.inventory.reduce((n,i)=>n+(i.quantity||0)*(i.cost||0),0);
+    const lowItems=DB.inventory.filter(i=>i.quantity<(i.parLevel||0)).length;
+    h='<div class="stat-grid">'+
+      '<div class="stat"><div class="lbl">'+ic("sprout")+' Total items</div><div class="num">'+DB.inventory.length+'</div></div>'+
+      '<div class="stat"><div class="lbl">'+ic("alert")+' Low stock</div><div class="num">'+lowItems+'</div><div class="det">'+(lowItems>0?'Need reorder':'All stocked')+'</div></div>'+
+      '<div class="stat"><div class="lbl">'+ic("coins")+' Inventory value</div><div class="num">'+money(totalValue)+'</div></div>'+
+      '<div class="stat"><div class="lbl">'+ic("coins")+' Avg unit cost</div><div class="num">'+money(DB.inventory.length>0?totalValue/DB.inventory.length:0)+'</div></div>'+
+      '</div>'+h;
+  } else if(!inventoryDraft) {
+    h+=emptyState("sprout","No inventory tracked","Add items to track stock levels and costs.");
+  }
+  document.getElementById("view-inventory").innerHTML=h;
+  const f=document.getElementById("invName"); if(f) f.focus();
+}
+function saveInventoryItem(){
+  const d=inventoryDraft||{};
+  const name=document.getElementById("invName").value.trim();
+  const qty=num(document.getElementById("invQty").value,0);
+  const cost=num(document.getElementById("invCost").value,0);
+  if(!name){ toast("Enter item name.","error"); return; }
+  if(cost==null){ toast("Enter cost per unit.","error"); return; }
+  const rec={name,category:document.getElementById("invCat").value.trim(),unit:document.getElementById("invUnit").value.trim(),
+    quantity:qty,cost,parLevel:num(document.getElementById("invPar").value,0),
+    supplier:document.getElementById("invSupp").value.trim(),notes:document.getElementById("invNotes").value.trim(),
+    lastOrdered:todayISO()};
+  if(d.id){ Object.assign(inventoryItemById(d.id),rec); }
+  else DB.inventory.push(Object.assign({id:uid()},rec));
+  inventoryDraft=null; saveDB(); renderInventory();
+}
+function deleteInventoryItem(id){
+  confirmDialog({title:"Remove this item?",confirmLabel:"Remove"}).then(function(ok){
+    if(!ok) return;
+    DB.inventory=DB.inventory.filter(x=>x.id!==id); saveDB(); renderInventory();
+  });
+}
+function inventoryItemById(id){ return DB.inventory.find(i=>i.id===id); }
+
+/* ============ 13b. FORECASTING & PREDICTIONS ============ */
+function renderForecasting(){
+  const today=todayISO();
+  const last30days=addDaysISO(today,-30);
+  const salesLast30=DB.sales.filter(s=>s.date>=last30days && s.date<=today);
+
+  // Calculate daily averages
+  const dailyTotals={};
+  salesLast30.forEach(sale=>{
+    const total=sale.dinein+sale.takeout+sale.delivery+sale.catering;
+    dailyTotals[sale.date]=total;
+  });
+  const avgDaily=Object.values(dailyTotals).length>0?
+    Object.values(dailyTotals).reduce((a,b)=>a+b,0)/Object.values(dailyTotals).length:0;
+  const totalSales30=Object.values(dailyTotals).reduce((a,b)=>a+b,0);
+
+  // Trend analysis
+  const firstHalf=salesLast30.slice(0,Math.floor(salesLast30.length/2));
+  const secondHalf=salesLast30.slice(Math.floor(salesLast30.length/2));
+  const avgFirst=firstHalf.length>0?firstHalf.reduce((n,s)=>n+s.dinein+s.takeout+s.delivery+s.catering,0)/firstHalf.length:0;
+  const avgSecond=secondHalf.length>0?secondHalf.reduce((n,s)=>n+s.dinein+s.takeout+s.delivery+s.catering,0)/secondHalf.length:0;
+  const trend=(avgSecond-avgFirst)/Math.max(avgFirst,1);
+
+  // Inventory usage forecast
+  let h='<div class="card"><h3>'+ic("trendup")+' Sales Forecast</h3>';
+  h+='<div class="stat-grid">'+
+    '<div class="stat"><div class="lbl">Avg daily sales</div><div class="num">'+money(avgDaily)+'</div></div>'+
+    '<div class="stat"><div class="lbl">Total (30d)</div><div class="num">'+money(totalSales30)+'</div></div>'+
+    '<div class="stat"><div class="lbl">Trend</div><div class="num" style="color:'+(trend>0?'var(--accent)':'var(--red)')+'">'+
+      (trend>0?'+':'')+(trend*100).toFixed(1)+'%</div><div class="det">'+(trend>0?'Increasing':'Decreasing')+'</div></div>'+
+    '<div class="stat"><div class="lbl">Forecast (7d)</div><div class="num">'+money(avgDaily*7*(1+trend))+'</div></div>'+
+    '</div></div>';
+
+  // Staffing forecast based on sales
+  const totalHoursLast30=DB.clock.filter(c=>c.out && c.in.slice(0,10)>=last30days).reduce((n,c)=>n+hoursBetween(c.in,c.out),0);
+  const avgHoursPerDay=salesLast30.length>0?totalHoursLast30/salesLast30.length:0;
+  const forecastedHours=avgHoursPerDay*(1+trend);
+
+  h+='<div class="card"><h3>'+ic("users")+' Staffing Forecast</h3>';
+  h+='<div class="stat-grid">'+
+    '<div class="stat"><div class="lbl">Avg hours/day</div><div class="num">'+avgHoursPerDay.toFixed(1)+'</div></div>'+
+    '<div class="stat"><div class="lbl">Total 30 days</div><div class="num">'+totalHoursLast30.toFixed(0)+'</div></div>'+
+    '<div class="stat"><div class="lbl">Forecasted hours/day</div><div class="num">'+forecastedHours.toFixed(1)+'</div><div class="det">7-day projection</div></div>'+
+    '<div class="stat"><div class="lbl">Staff needed</div><div class="num">'+(forecastedHours/8).toFixed(1)+'</div><div class="det">Full-time equivalents</div></div>'+
+    '</div></div>';
+
+  // Inventory forecast for top-used items
+  const top10Items=DB.inventory.filter(i=>i.quantity<(i.parLevel||0)||i.quantity<10).sort((a,b)=>{
+    const aReorder=Math.max(0,(a.parLevel||0)-a.quantity);
+    const bReorder=Math.max(0,(b.parLevel||0)-b.quantity);
+    return bReorder-aReorder;
+  }).slice(0,10);
+
+  if(top10Items.length>0){
+    h+='<div class="card"><h3>'+ic("alert")+' Reorder Alerts</h3><p class="hint" style="margin-bottom:12px;">Items below par level or low stock</p>';
+    top10Items.forEach(item=>{
+      const needOrder=Math.max(0,(item.parLevel||0)-item.quantity);
+      const reorderCost=needOrder*item.cost;
+      h+='<div style="padding:10px 0;border-top:1px solid var(--line-soft);">'+
+        '<div style="display:flex;justify-content:space-between;align-items:center;">'+
+        '<strong>'+esc(item.name)+'</strong><span class="pill" style="background:var(--red-soft);color:var(--red);">'+esc(item.category||"Item")+'</span>'+
+        '</div>'+
+        '<div class="kv"><span class="k">Need to order</span><span class="v">'+needOrder.toFixed(1)+' '+esc(item.unit||"units")+'</span></div>'+
+        '<div class="kv"><span class="k">Est. cost</span><span class="v">'+money(reorderCost)+'</span></div>'+
+        '<div class="kv"><span class="k">Supplier</span><span class="v">'+(item.supplier||"—")+'</span></div>'+
+        '</div>';
+    });
+    h+='</div>';
+  } else {
+    h+='<div class="card"><p class="hint">'+ic("checksq")+' All items are well stocked</p></div>';
+  }
+
+  document.getElementById("view-forecasting").innerHTML=h;
+}
+
+/* ============ 14. REPORTS ============ */
 let repFrom=null, repTo=null;
 function reportPreset(p){
   const t=todayISO();
@@ -1905,6 +2073,7 @@ const POSManager=new POSAdapterManager();
 /* ---------------- 16. INIT ---------------- */
 const RENDER={home:renderHome,schedule:renderSchedule,clock:renderClock,myhours:renderMyHours,payroll:renderPayroll,
   moneyin:renderMoneyIn,moneyout:renderMoneyOut,tasks:renderTasks,staff:renderStaff,
+  inventory:renderInventory,forecasting:renderForecasting,
   reports:renderReports,settings:renderSettings};
 document.addEventListener("DOMContentLoaded",function(){
   loadDB();
