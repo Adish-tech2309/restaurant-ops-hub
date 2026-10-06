@@ -649,8 +649,39 @@ function loadDB(){
   }catch(e){ console.warn("Could not load saved data:", e); }
 }
 function saveDB(){
-  try{ localStorage.setItem(DB_KEY, JSON.stringify(DB)); }
-  catch(e){ toast("Could not save — storage may be full (large receipt photos are the usual cause). Try deleting old receipt photos.","error"); }
+  try {
+    localStorage.setItem(DB_KEY, JSON.stringify(DB));
+  } catch(e) {
+    // QuotaExceededError: localStorage is full
+    if(e.name === 'QuotaExceededError' || e.code === 22){
+      console.warn('[QUOTA] localStorage full. Attempting cleanup...');
+
+      // Auto-cleanup: remove receipt photos from expenses older than 7 days
+      const cutoff = addDaysISO(todayISO(), -7);
+      let purgedCount = 0;
+
+      DB.expenses = DB.expenses.map(exp => {
+        if(exp.date < cutoff && exp.receipt){
+          exp.receipt = null;  // Clear photo to save space
+          purgedCount++;
+        }
+        return exp;
+      });
+
+      // Try saving again
+      try {
+        localStorage.setItem(DB_KEY, JSON.stringify(DB));
+        toast("Recovered space. Deleted " + purgedCount + " old receipt photos.", "info");
+      } catch(e2){
+        // Still full after cleanup
+        toast("Storage still full after cleanup. Please delete old expenses manually.", "error");
+        console.error('[SAVE_ERROR] Storage full even after cleanup');
+      }
+    } else {
+      toast("Could not save — " + (e.message || "unknown error"), "error");
+      console.error('[SAVE_ERROR]', e);
+    }
+  }
 }
 function staffById(id){ return DB.staff.find(s=>s.id===id); }
 function staffName(id){ const s=staffById(id); return s? s.name : "(removed staff)"; }
@@ -909,7 +940,7 @@ function renderClock(){
   h+='</div>';
   h+='<div class="card no-print"><h3>Clock in</h3><div class="field"><label>Staff member</label><select id="ciStaff">'+
       DB.staff.map(s=>'<option value="'+s.id+'">'+esc(s.name)+'</option>').join("")+'</select></div>'+
-      '<button class="btn btn-green" onclick="clockIn()">'+ic("clock")+' Clock in now</button></div>';
+      '<button id="ciBtn" class="btn btn-green" onclick="clockIn()">'+ic("clock")+' Clock in now</button></div>';
   // weekly hours
   const [w0,w1]=weekRange(todayISO()); const hrs=hoursInRange(w0,w1);
   h+='<div class="card"><h3>Hours this week <span class="hint">('+fmtDate(w0)+' – '+fmtDate(w1)+')</span></h3>';
@@ -930,18 +961,61 @@ function renderClock(){
   h+='</div>';
   document.getElementById("view-clock").innerHTML=h;
 }
+/* ============ CLOCK RATE LIMITING ============ */
+const CLOCK_RATE_LIMIT = 30;  // seconds between clock entries
+const clockLastActionTime = {};
+
+function canClockNow(staffId){
+  const now = Date.now();
+  const lastTime = clockLastActionTime[staffId] || 0;
+  const elapsedSecs = (now - lastTime) / 1000;
+
+  if(elapsedSecs < CLOCK_RATE_LIMIT){
+    const remaining = Math.ceil(CLOCK_RATE_LIMIT - elapsedSecs);
+    toast("Wait " + remaining + "s before clocking again.", "warning");
+    return false;
+  }
+  clockLastActionTime[staffId] = now;
+  return true;
+}
+
+function disableClockButton(staffId, durationSecs = CLOCK_RATE_LIMIT){
+  const btn = document.getElementById("ciBtn");
+  if(!btn) return;
+
+  btn.disabled = true;
+  btn.style.opacity = "0.5";
+  let remaining = durationSecs;
+  btn.textContent = "Wait " + remaining + "s...";
+
+  const countdown = setInterval(() => {
+    remaining--;
+    btn.textContent = "Wait " + Math.max(0, remaining) + "s...";
+
+    if(remaining <= 0){
+      clearInterval(countdown);
+      btn.disabled = false;
+      btn.style.opacity = "1";
+      btn.textContent = "Clock in now";
+    }
+  }, 1000);
+}
+
 function clockIn(){
   if(!DB.staff.length){ toast("Add staff members first (Staff tab).","info"); return; }
   const staffId=document.getElementById("ciStaff").value;
   if(DB.clock.some(e=>e.staffId===staffId&&!e.out)){ toast(staffName(staffId)+" is already clocked in.","info"); return; }
+  if(!canClockNow(staffId)) return;  // Rate limiting check
+
   const now=new Date();
-  const iso=isoOf(now)+"T"+String(now.getHours()).padStart(2,"0")+":"+String(now.getMinutes()).padStart(2,"0")+":00";
+  const iso=now.toISOString();  // FIX: Use full ISO with milliseconds for timestamp precision
   DB.clock.push({id:uid(),staffId,in:iso,out:null}); saveDB(); renderClock();
+  disableClockButton(staffId);
 }
 function clockOut(id){
   const e=DB.clock.find(x=>x.id===id); if(!e) return;
   const now=new Date();
-  e.out=isoOf(now)+"T"+String(now.getHours()).padStart(2,"0")+":"+String(now.getMinutes()).padStart(2,"0")+":00";
+  e.out=now.toISOString();  // FIX: Use full ISO with milliseconds for timestamp precision
   if(new Date(e.out)<=new Date(e.in)){ toast("Clock-out must be after clock-in.","error"); return; }
   saveDB(); renderClock();
 }
